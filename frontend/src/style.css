@@ -1,0 +1,16 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Arial, sans-serif; color: #222; background: #fafafa; }
+main { max-width: 560px; padding: 20px; margin: 0 auto; }
+h1 { margin-top: 0; }
+p { line-height: 1.5; }
+fieldset { border: 1px solid #bbb; padding: 16px; min-width: 0; }
+label { display: block; margin: 12px 0 6px; }
+input, select, button { font: inherit; min-height: 44px; padding: 10px; width: 100%; }
+input, select { border: 1px solid #888; border-radius: 3px; background: white; }
+button { margin-top: 12px; cursor: pointer; }
+button:disabled { cursor: wait; opacity: 0.6; }
+section { margin-top: 24px; }
+dl { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+.error { color: #9a1616; border: 1px solid; padding: 12px; }
+.status-flow { font-size: 0.9rem; }
