@@ -15,6 +15,7 @@ Cross-border remittance customers across Africa face significant barriers when s
 
 ---
 
+
 ## 💡 Solution: What is King-Pesa?
 
 **King-Pesa** (meaning *"Protect"* in Swahili) is designed specifically for Mukuru's core audience. It ensures that sending money home is **simple to send, transparent to track, and safer to access**.
