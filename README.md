@@ -1,4 +1,4 @@
-# Kinga-Pesa 🛡️
+---# Kinga-Pesa 🛡️
 
 > **Money Home, Made Simple.**  
 > A simple, multilingual, low-connectivity cross-border remittance app with recipient safety protection.
