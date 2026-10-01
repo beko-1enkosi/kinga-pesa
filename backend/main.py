@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import connect, initialize
-from models import Quote, QuoteRequest, Recipient, StatusUpdate, Transfer
+from models import Notification, Quote, QuoteRequest, Recipient, StatusUpdate, Transfer
 
 # Demo values only: units of recipient currency per 1 ZAR.
 MOCK_RATES = {"USD": Decimal("0.055"), "BWP": Decimal("0.75")}
@@ -106,6 +106,21 @@ def create_app(database_path=None):
         with connect(path) as db:
             return get_transfer(db, transfer_id)
 
+    @app.get("/transfers/{transfer_id}/notifications", response_model=list[Notification])
+    def notifications(transfer_id: int):
+        with connect(path) as db:
+            get_transfer(db, transfer_id)
+            rows = db.execute(
+                """SELECT n.*, r.name AS recipient_name,
+                          t.receive_amount, t.receive_currency
+                   FROM notifications n
+                   JOIN recipients r ON r.id = n.recipient_id
+                   JOIN transfers t ON t.id = n.transfer_id
+                   WHERE n.transfer_id = ? ORDER BY n.id""",
+                (transfer_id,),
+            ).fetchall()
+            return [dict(row) for row in rows]
+
     @app.patch("/transfers/{transfer_id}/status", response_model=Transfer)
     def update_status(transfer_id: int, request: StatusUpdate):
         with connect(path) as db:
@@ -118,6 +133,23 @@ def create_app(database_path=None):
                 detail = f"Next allowed status: {next_status}" if next_status else "Transfer is already Collected"
                 raise HTTPException(409, detail)
             db.execute("UPDATE transfers SET status = ? WHERE id = ?", (request.status, transfer_id))
+            if request.status == "Ready to Collect":
+                recipient = get_recipient(db, current["recipient_id"])
+                message = (
+                    f"{recipient['name']}, your KingaPesa transfer of "
+                    f"{current['receive_currency']} {Decimal(current['receive_amount']):.2f} "
+                    "is ready to collect."
+                )
+                # Simulated SMS only. The notification and status commit together.
+                # The unique transfer_id also prevents duplicate rows on retries.
+                db.execute(
+                    """INSERT INTO notifications
+                       (transfer_id, recipient_id, channel, message, status, created_at)
+                       VALUES (?, ?, 'SMS', ?, 'sent', ?)
+                       ON CONFLICT(transfer_id) DO NOTHING""",
+                    (transfer_id, current["recipient_id"], message,
+                     datetime.now(timezone.utc).isoformat()),
+                )
             return get_transfer(db, transfer_id)
 
     return app

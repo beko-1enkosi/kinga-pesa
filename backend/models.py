@@ -42,3 +42,17 @@ class Transfer(Quote):
 class StatusUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     status: Status
+
+
+class Notification(BaseModel):
+    id: int
+    transfer_id: int
+    recipient_id: int
+    channel: Literal["SMS"]
+    message: str
+    status: Literal["sent"]
+    created_at: datetime
+    # Structured display data lets the frontend translate without parsing the message.
+    recipient_name: str
+    receive_amount: Money
+    receive_currency: Literal["USD", "BWP"]

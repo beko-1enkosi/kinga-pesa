@@ -38,6 +38,15 @@ def initialize(path):
                 ),
                 created_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                transfer_id INTEGER NOT NULL UNIQUE REFERENCES transfers(id),
+                recipient_id INTEGER NOT NULL REFERENCES recipients(id),
+                channel TEXT NOT NULL CHECK (channel = 'SMS'),
+                message TEXT NOT NULL,
+                status TEXT NOT NULL CHECK (status = 'sent'),
+                created_at TEXT NOT NULL
+            );
         """)
         db.executemany(
             "INSERT OR IGNORE INTO recipients VALUES (?, ?, ?, ?)",

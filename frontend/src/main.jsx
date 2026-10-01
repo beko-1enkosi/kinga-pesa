@@ -70,6 +70,9 @@ function App() {
   const [amount, setAmount] = useState('');
   const [quote, setQuote] = useState(null);
   const [transfer, setTransfer] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [notificationError, setNotificationError] = useState(false);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -99,6 +102,23 @@ function App() {
       setError(err.message || 'requestFailed');
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function displayTransfer(updatedTransfer) {
+    setTransfer(updatedTransfer);
+    setNotificationError(false);
+    if (updatedTransfer.id !== transfer?.id) setNotifications([]);
+    if (!['Ready to Collect', 'Collected'].includes(updatedTransfer.status)) return;
+
+    setNotificationLoading(true);
+    try {
+      setNotifications(await api(`/transfers/${updatedTransfer.id}/notifications`));
+    } catch {
+      // A notification fetch failure must not hide a successful status update.
+      setNotificationError(true);
+    } finally {
+      setNotificationLoading(false);
     }
   }
 
@@ -160,7 +180,7 @@ function App() {
             <h2 id="quote-heading">{t('quoteSummary', { name: recipient?.name })}</h2>
             <QuoteDetails quote={quote} t={t} />
             <button disabled={busy} onClick={() => run(async () => {
-              setTransfer(await api('/transfers', 'POST', quote));
+              await displayTransfer(await api('/transfers', 'POST', quote));
               setQuote(null);
             })}>{t('confirmAndSend')}</button>
           </section>}
@@ -172,14 +192,32 @@ function App() {
           <QuoteDetails quote={transfer} t={t} />
           <p role="status">{t('transferStatus')} <strong>{statusLabel(transfer.status)}</strong></p>
           <p className="status-flow">{statuses.map(statusLabel).join(' → ')}</p>
+          {(notifications.length > 0 || notificationLoading || notificationError) && (
+            <section className="notification-card" aria-labelledby="notification-heading" aria-live="polite">
+              <h3 id="notification-heading">{t('receiverNotification')}</h3>
+              <p>{t('simulatedNotification')}</p>
+              {notificationLoading && <p role="status">{t('loadingNotifications')}</p>}
+              {notificationError && <p role="alert">{t('notificationLoadFailed')}</p>}
+              {notifications.map((notification) => (
+                <div key={notification.id}>
+                  <p>{t('notificationSent', { name: notification.recipient_name })}</p>
+                  <p>{t('notificationMessage', {
+                    name: notification.recipient_name,
+                    amount: money(notification.receive_amount, notification.receive_currency),
+                  })}</p>
+                </div>
+              ))}
+            </section>
+          )}
           {nextStatus && <button disabled={busy} onClick={() => run(async () => {
-            setTransfer(await api(`/transfers/${transfer.id}/status`, 'PATCH', { status: nextStatus }));
+            await displayTransfer(await api(`/transfers/${transfer.id}/status`, 'PATCH', { status: nextStatus }));
           })}>{t('advanceStatus', { status: statusLabel(nextStatus) })}</button>}
           <button disabled={busy} onClick={() => run(async () => {
-            setTransfer(await api(`/transfers/${transfer.id}`));
+            await displayTransfer(await api(`/transfers/${transfer.id}`));
           })}>{t('refreshStatus')}</button>
           <button disabled={busy} onClick={() => {
             setTransfer(null); setAmount(''); setError('');
+            setNotifications([]); setNotificationError(false);
           }}>{t('startAnotherTransfer')}</button>
         </section>
       )}

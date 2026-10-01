@@ -14,3 +14,6 @@ dl { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 .error { color: #9a1616; border: 1px solid; padding: 12px; }
 .status-flow { font-size: 0.9rem; }
+
+.notification-card { border: 1px solid #bbb; padding: 12px; }
+.notification-card h3 { margin-top: 0; }

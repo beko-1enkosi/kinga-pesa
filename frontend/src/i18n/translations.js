@@ -9,6 +9,12 @@ export const languageStorageKey = 'kingapesa.language';
 // API values, recipient names and currency codes are never translated in requests.
 export const translations = {
   en: {
+    receiverNotification: 'Receiver notification',
+    simulatedNotification: 'Simulated demo notification — no real SMS was sent.',
+    notificationSent: 'SMS sent to {name}',
+    notificationMessage: '{name}, your KingaPesa transfer of {amount} is ready to collect.',
+    loadingNotifications: 'Loading receiver notification…',
+    notificationLoadFailed: 'Could not load the receiver notification. Refresh the status to try again.',
     language: 'Language',
     introduction: 'Demo only — mock rates, no real money is sent.',
     feeExplanation: 'Fee: ZAR 10.00 + 2% of the amount you send.',
@@ -49,6 +55,12 @@ export const translations = {
     'status.Collected': 'Collected',
   },
   zu: {
+    receiverNotification: 'Isaziso sowamukelayo',
+    simulatedNotification: 'Isaziso sesibonelo kuphela — ayikho i-SMS yangempela ethunyelwe.',
+    notificationSent: 'I-SMS ithunyelwe ku-{name}',
+    notificationMessage: '{name}, imali yakho ye-KingaPesa engu-{amount} isilungele ukulandwa.',
+    loadingNotifications: 'Kulayishwa isaziso sowamukelayo…',
+    notificationLoadFailed: 'Isaziso sowamukelayo asikwazanga ukulayishwa. Buyekeza isimo ukuze uzame futhi.',
     language: 'Ulimi',
     introduction: 'Okwesibonelo kuphela — kusetshenziswa amanani okushintshanisa ayisibonelo, ayikho imali yangempela ethunyelwayo.',
     feeExplanation: 'Imali yesevisi: ZAR 10.00 + 2% wemali oyithumelayo.',
@@ -89,6 +101,12 @@ export const translations = {
     'status.Collected': 'Ilandiwe',
   },
   sn: {
+    receiverNotification: 'Chiziviso cheanogamuchira',
+    simulatedNotification: 'Chiziviso chemuenzaniso chete — hapana SMS chaiyo yatumirwa.',
+    notificationSent: 'SMS yatumirwa kuna {name}',
+    notificationMessage: '{name}, mari yako ye-KingaPesa ye{amount} yagadzirira kutorwa.',
+    loadingNotifications: 'Chiziviso cheanogamuchira chiri kurodhwa…',
+    notificationLoadFailed: 'Chiziviso cheanogamuchira chatadza kurodhwa. Gadziridza mamiriro kuti uedze zvakare.',
     language: 'Mutauro',
     introduction: 'Muenzaniso chete — mitengo yekuchinjana ndeyemuenzaniso, hapana mari chaiyo inotumirwa.',
     feeExplanation: 'Mari yebasa: ZAR 10.00 + 2% yemari yaunotumira.',
