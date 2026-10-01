@@ -6,6 +6,7 @@ import { languages, languageStorageKey, readLanguage, translate } from './i18n/t
 import { api } from './api';
 import { keys, readStored, writeStored, storageAvailable } from './storage';
 import { useConnection } from './useConnection';
+import RecipientAccess from './RecipientAccess';
 
 const statuses = ['Sent', 'In Transit', 'Ready to Collect', 'Collected'];
 const money = (amount, currency) => `${currency} ${Number(amount).toFixed(2)}`;
@@ -23,6 +24,7 @@ function QuoteDetails({ quote, t }) {
 }
 
 function App() {
+  const [recipientOpen, setRecipientOpen] = useState(false);
   const [saved] = useState(() => {
     const draft = readStored(keys.draft, {});
     const current = readStored(keys.currentTransfer, {});
@@ -159,13 +161,13 @@ function App() {
   // One read-only synchronization per successful health check, never polling.
   // Wait for any explicit action to finish rather than overlap it with refreshes.
   useEffect(() => {
-    if (!healthEpoch || syncedEpoch.current === healthEpoch || busy || connection !== 'online') return;
+    if (recipientOpen || !healthEpoch || syncedEpoch.current === healthEpoch || busy || connection !== 'online') return;
     syncedEpoch.current = healthEpoch;
     run(async () => {
       if (transfer) await refreshTransfer();
       else if (!dataLight || recipients.length === 0) await loadRecipients();
     });
-  }, [healthEpoch, busy, connection]);
+  }, [healthEpoch, busy, connection, recipientOpen]);
 
   function getQuote(event) {
     event.preventDefault();
@@ -232,6 +234,23 @@ function App() {
   const connectionText = connection === 'online' ? (reconnected ? 'backOnline' : 'online') :
     connection === 'checking' ? 'checkingConnection' : connection === 'offline' ?
       (canSave ? 'deviceOffline' : 'offlineUnsaved') : (canSave ? 'weakConnection' : 'weakUnsaved');
+
+  if (recipientOpen && transfer) return (
+    <main>
+      <h1>KingaPesa</h1>
+      <label htmlFor="recipient-language">{t('language')}</label>
+      <select id="recipient-language" value={language} onChange={event => setLanguage(event.target.value)}>
+        {languages.map(({ code, name }) => <option key={code} value={code} lang={code}>{name}</option>)}
+      </select>
+      {connection === 'weak' && <button onClick={checkConnection}>{t('retryConnection')}</button>}
+      <RecipientAccess transferId={transfer.id} currency={transfer.receive_currency} t={t} live={live}
+        reportFailure={reportFailure} onExit={() => {
+          setRecipientOpen(false);
+          setTransferCached(true);
+          if (live) run(refreshTransfer);
+        }} />
+    </main>
+  );
 
   return (
     <main>
@@ -303,6 +322,7 @@ function App() {
           <QuoteDetails quote={transfer} t={t} />
           <p role="status">{t(transferCached || !live ? 'savedTransferStatus' : 'transferStatus')} <strong>{statusLabel(transfer.status)}</strong></p>
           <p className="status-flow">{statuses.map(statusLabel).join(' → ')}</p>
+          {transfer.status === 'Ready to Collect' && <button disabled={busy} onClick={() => setRecipientOpen(true)}>{t('saOpenRecipient')}</button>}
           {(notifications.length > 0 || notificationLoading || notificationError) && (
             <section className="notification-card" aria-labelledby="notification-heading" aria-live="polite">
               <h3 id="notification-heading">{t('receiverNotification')}</h3>

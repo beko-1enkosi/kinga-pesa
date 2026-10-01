@@ -4,10 +4,14 @@ from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from database import connect, initialize
 from models import Notification, Quote, QuoteRequest, Recipient, StatusUpdate, Transfer
+from safe_access import register_routes, real_remaining
 
 # Demo values only: units of recipient currency per 1 ZAR.
 MOCK_RATES = {"USD": Decimal("0.055"), "BWP": Decimal("0.75")}
@@ -54,6 +58,18 @@ def create_app(database_path=None):
         yield
 
     app = FastAPI(title="KingaPesa MVP", lifespan=lifespan)
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_error(request, exc):
+        if not request.url.path.endswith(("/safe-access", "/recipient-access", "/withdrawals")):
+            return await request_validation_exception_handler(request, exc)
+        # Pydantic errors can contain raw request inputs, including PINs.
+        return JSONResponse(status_code=422, content={"detail": [
+            {"loc": error["loc"], "type": error["type"], "msg": "Invalid value"}
+            for error in exc.errors()
+        ]})
+
+    register_routes(app, path, connect, get_transfer)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -132,6 +148,10 @@ def create_app(database_path=None):
             if request.status != next_status:
                 detail = f"Next allowed status: {next_status}" if next_status else "Transfer is already Collected"
                 raise HTTPException(409, detail)
+            if request.status == "Collected" and db.execute(
+                "SELECT 1 FROM safe_access WHERE transfer_id = ?", (transfer_id,)
+            ).fetchone() and real_remaining(db, current) > 0:
+                raise HTTPException(409, "Collect remaining funds through recipient access.")
             db.execute("UPDATE transfers SET status = ? WHERE id = ?", (request.status, transfer_id))
             if request.status == "Ready to Collect":
                 recipient = get_recipient(db, current["recipient_id"])

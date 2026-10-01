@@ -27,11 +27,28 @@ export async function api(path, method = 'GET', body) {
     }
     if (!response.ok) {
       let key = 'requestFailed';
+      const safeOperation = /\/(safe-access|recipient-access|withdrawals)$/.test(path);
+      const safeErrors = {
+        'Safe Access already configured.': 'saAlreadyConfigured',
+        'Transfer must be Ready to Collect.': 'saNotReady',
+        'PINs must be four numeric digits.': 'saInvalidPin',
+        'PINs must differ.': 'saPinsDiffer',
+        'Invalid protected amount.': 'saInvalidProtected',
+        'PIN could not be verified.': 'saIncorrectPin',
+        'Withdrawal exceeds available amount.': 'saWithdrawalTooLarge',
+        'Collect remaining funds through recipient access.': 'saCollectionRequired',
+      };
       if (response.status === 404) key = data.detail === 'Recipient not found' ? 'recipientNotFound' : 'transferNotFound';
       else if (response.status === 422) key = 'invalidData';
       else if (response.status === 409) {
         key = method === 'PATCH' ? 'statusConflict' : 'quoteChanged';
         if (data.detail === 'Transfer is already Collected') key = 'alreadyCollected';
+      }
+      if (typeof data.detail === 'string' && safeErrors[data.detail]) key = safeErrors[data.detail];
+      else if (safeOperation && response.status === 422) {
+        const fields = Array.isArray(data.detail) ? data.detail.map(error => error.loc?.at(-1)) : [];
+        key = fields.includes('protected_amount') ? 'saInvalidProtected' :
+          fields.includes('amount') ? 'saInvalidWithdrawal' : 'saInvalidPin';
       }
       throw new ApiError(key, 'application', response.status);
     }

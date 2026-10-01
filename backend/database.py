@@ -47,6 +47,21 @@ def initialize(path):
                 status TEXT NOT NULL CHECK (status = 'sent'),
                 created_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS safe_access (
+                transfer_id INTEGER PRIMARY KEY REFERENCES transfers(id),
+                primary_pin_hash TEXT NOT NULL,
+                primary_pin_salt TEXT NOT NULL,
+                safety_pin_hash TEXT NOT NULL,
+                safety_pin_salt TEXT NOT NULL,
+                protected_remaining TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS withdrawals (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                transfer_id INTEGER NOT NULL REFERENCES transfers(id),
+                amount TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
         """)
         db.executemany(
             "INSERT OR IGNORE INTO recipients VALUES (?, ?, ?, ?)",
