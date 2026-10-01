@@ -10,7 +10,7 @@
 Cross-border remittance customers across Africa face significant barriers when sending money home to support their families:
 - **Hidden Costs:** Opaque fees and exchange rates lead to uncertainty before completing a transfer.
 - **Connectivity Barriers:** Heavy mobile apps fail or drop transactions in areas with low bandwidth or poor mobile network coverage.
-- **Language Barriers:** Non-intuitive interfaces that lack native language support create confusion.
+- **Language Barriers:** Non-intuitive interfaces that lack native language support create confusion. 
 - **Post-Arrival Safety:** Recipient safety at physical cash payout locations is often overlooked, leaving vulnerable family members exposed to extortion or coercion.
 
 ---
