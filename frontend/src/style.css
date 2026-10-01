@@ -17,3 +17,9 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 
 .notification-card { border: 1px solid #bbb; padding: 12px; }
 .notification-card h3 { margin-top: 0; }
+
+.connection-status { font-weight: bold; }
+.data-access { border: 1px solid #bbb; padding: 12px; margin-top: 16px; font-size: 0.9rem; }
+.data-access h2 { margin-top: 0; font-size: 1rem; }
+.toggle { display: flex; align-items: center; gap: 8px; }
+.toggle input { width: 18px; min-height: 18px; margin: 0; flex-shrink: 0; }

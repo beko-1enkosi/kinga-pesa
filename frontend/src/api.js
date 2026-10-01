@@ -1,0 +1,45 @@
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
+export class ApiError extends Error {
+  constructor(key, kind = 'application', status = 0) {
+    super(key);
+    this.kind = kind;
+    this.status = status;
+  }
+}
+
+// No automatic retries: a lost POST response does not mean the transfer failed.
+export async function api(path, method = 'GET', body) {
+  if (!navigator.onLine) throw new ApiError('deviceOffline', 'offline');
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetch(`${API_URL}${path}`, {
+      method, signal: controller.signal, cache: 'no-store',
+      ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}),
+    });
+    let data;
+    try {
+      data = await response.json();
+    } catch (error) {
+      if (controller.signal.aborted || error instanceof TypeError) throw error;
+      throw new ApiError('requestFailed', 'application', response.status);
+    }
+    if (!response.ok) {
+      let key = 'requestFailed';
+      if (response.status === 404) key = data.detail === 'Recipient not found' ? 'recipientNotFound' : 'transferNotFound';
+      else if (response.status === 422) key = 'invalidData';
+      else if (response.status === 409) {
+        key = method === 'PATCH' ? 'statusConflict' : 'quoteChanged';
+        if (data.detail === 'Transfer is already Collected') key = 'alreadyCollected';
+      }
+      throw new ApiError(key, 'application', response.status);
+    }
+    return data;
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(navigator.onLine ? 'weakConnection' : 'deviceOffline', navigator.onLine ? 'network' : 'offline');
+  } finally {
+    clearTimeout(timeout);
+  }
+}

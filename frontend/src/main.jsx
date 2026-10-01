@@ -1,43 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './style.css';
 import { languages, languageStorageKey, readLanguage, translate } from './i18n/translations';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+import { api } from './api';
+import { keys, readStored, writeStored, storageAvailable } from './storage';
+import { useConnection } from './useConnection';
+
 const statuses = ['Sent', 'In Transit', 'Ready to Collect', 'Collected'];
 const money = (amount, currency) => `${currency} ${Number(amount).toFixed(2)}`;
-
-async function api(path, method = 'GET', body) {
-  let response;
-  try {
-    response = await fetch(`${API_URL}${path}`, {
-      method,
-      ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}),
-    });
-  } catch {
-    throw new Error('networkError');
-  }
-  let data;
-  try {
-    data = await response.json();
-  } catch {
-    throw new Error('requestFailed');
-  }
-  // Store translation keys, so an error already on screen changes language too.
-  if (!response.ok) {
-    let key = 'requestFailed';
-    if (response.status === 404) {
-      key = data.detail === 'Recipient not found' ? 'recipientNotFound' : 'transferNotFound';
-    } else if (response.status === 422) {
-      key = 'invalidData';
-    } else if (response.status === 409) {
-      key = method === 'PATCH' ? 'statusConflict' : 'quoteChanged';
-      if (data.detail === 'Transfer is already Collected') key = 'alreadyCollected';
-    }
-    throw new Error(key);
-  }
-  return data;
-}
 
 function QuoteDetails({ quote, t }) {
   return (
@@ -52,96 +23,215 @@ function QuoteDetails({ quote, t }) {
 }
 
 function App() {
-  const [language, setLanguage] = useState(readLanguage);
+  const [saved] = useState(() => {
+    const draft = readStored(keys.draft, {});
+    const current = readStored(keys.currentTransfer, {});
+    const recipients = readStored(keys.recipients, []);
+    return {
+      draft: draft && typeof draft === 'object' ? draft : {},
+      current: current?.transfer?.id && statuses.includes(current.transfer.status) ? current : {},
+      recipients: Array.isArray(recipients) ? recipients.filter(item => item?.id && item.name && item.currency) : [],
+    };
+  });
+  const [language, setLanguage] = useState(() =>
+    languages.some(item => item.code === saved.draft.language) ? saved.draft.language : readLanguage());
   const t = (key, values) => translate(language, key, values);
-  const statusLabel = (status) => t(`status.${status}`);
+  const statusLabel = status => t(`status.${status}`);
+  const { connection, reconnected, healthEpoch, checkConnection, reportFailure } = useConnection();
+  const [canSave, setCanSave] = useState(storageAvailable);
+  const [dataLight, setDataLight] = useState(() => readStored(keys.dataLight, false) === true);
+  const [sponsoredDemo, setSponsoredDemo] = useState(() => readStored(keys.sponsoredDemo, false) === true);
+  const [offlineReady, setOfflineReady] = useState(false);
+  const [recipients, setRecipients] = useState(saved.recipients);
+  const [recipientId, setRecipientId] = useState(String(saved.draft.recipientId || saved.current.transfer?.recipient_id || saved.recipients[0]?.id || ''));
+  const [amount, setAmount] = useState(typeof saved.draft.amount === 'string' ? saved.draft.amount : '');
+  const [draftDirty, setDraftDirty] = useState(Boolean(saved.draft.recipientId || saved.draft.amount));
+  const [quote, setQuote] = useState(null);
+  const quoteStale = useRef(false);
+  const [transfer, setTransfer] = useState(saved.current.transfer || null);
+  const [transferName, setTransferName] = useState(saved.current.recipientName || '');
+  const [notifications, setNotifications] = useState(Array.isArray(saved.current.notifications) ? saved.current.notifications : []);
+  const [recipientsCached, setRecipientsCached] = useState(saved.recipients.length > 0);
+  const [transferCached, setTransferCached] = useState(Boolean(saved.current.transfer));
+  const [notificationsCached, setNotificationsCached] = useState(Boolean(saved.current.transfer));
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [notificationError, setNotificationError] = useState(false);
+  const [pendingSend, setPendingSend] = useState(() => Boolean(readStored(keys.pendingSend, null)) && !saved.current.transfer);
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const syncedEpoch = useRef(0);
+
+  function save(key, value) {
+    if (!writeStored(key, value)) setCanSave(false);
+  }
 
   useEffect(() => {
     document.documentElement.lang = language;
-    try {
-      localStorage.setItem(languageStorageKey, language);
-    } catch {
-      // Language switching still works when browser storage is unavailable.
-    }
+    try { localStorage.setItem(languageStorageKey, language); }
+    catch { setCanSave(false); }
   }, [language]);
 
-  const [recipients, setRecipients] = useState([]);
-  const [recipientId, setRecipientId] = useState('');
-  const [amount, setAmount] = useState('');
-  const [quote, setQuote] = useState(null);
-  const [transfer, setTransfer] = useState(null);
-  const [notifications, setNotifications] = useState([]);
-  const [notificationLoading, setNotificationLoading] = useState(false);
-  const [notificationError, setNotificationError] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  useEffect(() => {
+    if (draftDirty && !transfer) save(keys.draft, { recipientId, amount, language });
+  }, [recipientId, amount, language, draftDirty, transfer]);
+
+  useEffect(() => {
+    if (connection === 'offline' || connection === 'weak') {
+      quoteStale.current = true;
+      setRecipientsCached(true);
+      setTransferCached(true);
+      setNotificationsCached(true);
+    }
+  }, [connection]);
+
+  useEffect(() => {
+    if (!import.meta.env.PROD || !('serviceWorker' in navigator)) return;
+    // This caches only the application files, never API data or mutations.
+    navigator.serviceWorker.ready.then(() => setOfflineReady(true));
+    if (navigator.onLine) {
+      navigator.serviceWorker.register('/sw.js').catch(() => setOfflineReady(Boolean(navigator.serviceWorker.controller)));
+    }
+  }, []);
+
+  function handleError(err) {
+    reportFailure(err);
+    setError(err.message || 'requestFailed');
+  }
 
   async function loadRecipients() {
     setLoading(true);
-    setError('');
     try {
       const data = await api('/recipients');
       setRecipients(data);
-      setRecipientId(String(data[0]?.id || ''));
+      setRecipientsCached(false);
+      save(keys.recipients, data);
+      setRecipientId(current => current || String(data[0]?.id || ''));
     } catch (err) {
-      setError(err.message || 'requestFailed');
-    } finally {
-      setLoading(false);
-    }
+      setRecipientsCached(true);
+      handleError(err);
+    } finally { setLoading(false); }
   }
 
-  useEffect(() => { loadRecipients(); }, []);
-
   async function run(action) {
+    if (busyRef.current) return;
+    busyRef.current = true;
     setBusy(true);
     setError('');
-    try {
-      await action();
-    } catch (err) {
-      setError(err.message || 'requestFailed');
-    } finally {
-      setBusy(false);
-    }
+    try { await action(); }
+    catch (err) { handleError(err); }
+    finally { busyRef.current = false; setBusy(false); }
+  }
+
+  function saveTransfer(updated, records, name) {
+    save(keys.currentTransfer, { transfer: updated, notifications: records, recipientName: name });
   }
 
   async function displayTransfer(updatedTransfer) {
+    const name = recipients.find(item => item.id === updatedTransfer.recipient_id)?.name || transferName;
+    const previous = updatedTransfer.id === transfer?.id ? notifications : [];
     setTransfer(updatedTransfer);
+    setTransferName(name);
+    setTransferCached(false);
     setNotificationError(false);
-    if (updatedTransfer.id !== transfer?.id) setNotifications([]);
+    setNotifications(previous);
+    saveTransfer(updatedTransfer, previous, name);
     if (!['Ready to Collect', 'Collected'].includes(updatedTransfer.status)) return;
-
     setNotificationLoading(true);
     try {
-      setNotifications(await api(`/transfers/${updatedTransfer.id}/notifications`));
-    } catch {
-      // A notification fetch failure must not hide a successful status update.
+      const records = await api(`/transfers/${updatedTransfer.id}/notifications`);
+      setNotifications(records);
+      setNotificationsCached(false);
+      saveTransfer(updatedTransfer, records, name);
+    } catch (err) {
+      reportFailure(err);
+      setNotificationsCached(true);
       setNotificationError(true);
-    } finally {
-      setNotificationLoading(false);
-    }
+    } finally { setNotificationLoading(false); }
   }
+
+  async function refreshTransfer() {
+    try { await displayTransfer(await api(`/transfers/${transfer.id}`)); }
+    catch (err) { setTransferCached(true); throw err; }
+  }
+
+  // One read-only synchronization per successful health check, never polling.
+  // Wait for any explicit action to finish rather than overlap it with refreshes.
+  useEffect(() => {
+    if (!healthEpoch || syncedEpoch.current === healthEpoch || busy || connection !== 'online') return;
+    syncedEpoch.current = healthEpoch;
+    run(async () => {
+      if (transfer) await refreshTransfer();
+      else if (!dataLight || recipients.length === 0) await loadRecipients();
+    });
+  }, [healthEpoch, busy, connection]);
 
   function getQuote(event) {
     event.preventDefault();
-    setQuote(null);
-    if (!recipientId) {
-      setError('recipientRequired');
-      return;
-    }
+    if (!navigator.onLine) { setError(canSave ? 'offlineQuote' : 'offlineQuoteUnsaved'); return; }
+    if (connection !== 'online') { setError('weakConnection'); return; }
+    if (!recipients.some(item => item.id === Number(recipientId))) { setError('recipientRequired'); return; }
     const input = event.currentTarget.elements.namedItem('amount');
-    // Replace browser-language validation bubbles with the selected app language.
     if (!input.validity.valid) {
       setError(input.validity.valueMissing && !input.validity.badInput ? 'amountRequired' : 'invalidAmount');
       return;
     }
-    run(async () => setQuote(await api('/quote', 'POST', {
-      recipient_id: Number(recipientId), amount,
-    })));
+    run(async () => {
+      const latest = await api('/quote', 'POST', { recipient_id: Number(recipientId), amount });
+      setQuote(latest);
+      quoteStale.current = false;
+    });
+  }
+
+  async function confirmTransfer() {
+    if (!navigator.onLine || connection !== 'online' || pendingSend) return;
+    let confirmed = quote;
+    if (quoteStale.current) {
+      const latest = await api('/quote', 'POST', { recipient_id: quote.recipient_id, amount: quote.send_amount });
+      const numeric = ['send_amount', 'fee', 'exchange_rate', 'total_cost', 'receive_amount'];
+      const changed = numeric.some(key => Number(latest[key]) !== Number(quote[key])) ||
+        latest.receive_currency !== quote.receive_currency || latest.send_currency !== quote.send_currency;
+      setQuote(latest);
+      quoteStale.current = false;
+      if (changed) { setError('quoteUpdated'); return; }
+      confirmed = latest;
+    }
+    // Persist an uncertainty marker before sending. Never automatically retry a POST.
+    save(keys.pendingSend, { recipientId: confirmed.recipient_id, amount: confirmed.send_amount, createdAt: new Date().toISOString() });
+    setPendingSend(true);
+    let created;
+    try { created = await api('/transfers', 'POST', confirmed); }
+    catch (err) {
+      if (err.kind === 'application' && err.status >= 400 && err.status < 500) {
+        save(keys.pendingSend, null);
+        setPendingSend(false);
+      }
+      throw err;
+    }
+    await displayTransfer(created);
+    save(keys.pendingSend, null);
+    setPendingSend(false);
+    save(keys.draft, null);
+    setDraftDirty(false);
+    setQuote(null);
+    setAmount('');
+  }
+
+  function startAnotherTransfer() {
+    save(keys.currentTransfer, null);
+    save(keys.draft, null);
+    setDraftDirty(false);
+    setTransfer(null); setQuote(null); setAmount(''); setError('');
+    setNotifications([]); setNotificationError(false); setTransferName('');
   }
 
   const nextStatus = transfer ? statuses[statuses.indexOf(transfer.status) + 1] : null;
-  const recipient = recipients.find((item) => item.id === Number(recipientId));
+  const recipient = recipients.find(item => item.id === Number(recipientId));
+  const live = connection === 'online';
+  const connectionText = connection === 'online' ? (reconnected ? 'backOnline' : 'online') :
+    connection === 'checking' ? 'checkingConnection' : connection === 'offline' ?
+      (canSave ? 'deviceOffline' : 'offlineUnsaved') : (canSave ? 'weakConnection' : 'weakUnsaved');
 
   return (
     <main>
@@ -150,20 +240,43 @@ function App() {
       <select id="language" value={language} onChange={(event) => setLanguage(event.target.value)}>
         {languages.map(({ code, name }) => <option key={code} value={code} lang={code}>{name}</option>)}
       </select>
+      <p role="status" className="connection-status">{t(connectionText)}</p>
+      {connection === 'weak' && <button disabled={busy} onClick={checkConnection}>{t('retryConnection')}</button>}
+      {!canSave && <p role="alert">{t('storageUnavailable')}</p>}
+      <aside className="data-access" aria-labelledby="data-access-heading">
+        <h2 id="data-access-heading">{t('dataAccess')}</h2>
+        <p>{t('dataAccessExplanation')}</p>
+        <p><strong>{t('sponsoredDisclaimer')}</strong></p>
+        <label className="toggle"><input type="checkbox" checked={sponsoredDemo} onChange={event => {
+          setSponsoredDemo(event.target.checked); save(keys.sponsoredDemo, event.target.checked);
+        }} />{t('sponsoredToggle')}</label>
+        {sponsoredDemo && <p>{t('sponsoredEnabled')}</p>}
+        {sponsoredDemo && <p>{t('sponsoredScenario')}</p>}
+        <label className="toggle"><input type="checkbox" checked={dataLight} onChange={event => {
+          setDataLight(event.target.checked); save(keys.dataLight, event.target.checked);
+        }} />{t('dataLightToggle')}</label>
+        <p>{t('dataLightExplanation')}</p>
+        <p>{t(offlineReady ? 'offlineReloadReady' : 'offlineReloadNotReady')}</p>
+      </aside>
       <p>{t('introduction')}</p>
       <p>{t('feeExplanation')}</p>
       {error && <p role="alert" className="error">{t(error)}</p>}
-      {loading ? <p role="status">{t('loadingRecipients')}</p> : recipients.length === 0 ? (
-        <button onClick={loadRecipients}>{t('retryRecipients')}</button>
-      ) : !transfer ? (
+      {pendingSend && !transfer && !busy && <p role="alert">{t('sendUncertain')}</p>}
+      {!transfer ? (
         <>
+          {loading && <p role="status">{t('loadingRecipients')}</p>}
+          {(recipientsCached || !live) && recipients.length > 0 && <p>{t('cachedRecipients')}</p>}
+          {recipients.length === 0 && <p>{t('noSavedRecipients')}</p>}
+          {recipients.length === 0 && <button disabled={busy || !live} onClick={() => run(loadRecipients)}>{t('retryRecipients')}</button>}
+          {draftDirty && canSave && <p>{t('draftSaved')}</p>}
           <form onSubmit={getQuote} noValidate>
             <fieldset disabled={busy}>
               <legend>{t('sendMoney')}</legend>
               <label htmlFor="recipient">{t('selectRecipient')}</label>
               <select id="recipient" value={recipientId} onChange={(event) => {
-                setRecipientId(event.target.value); setQuote(null); setError('');
+                setRecipientId(event.target.value); setDraftDirty(true); setQuote(null); setError('');
               }}>
+                {!recipients.some(item => item.id === Number(recipientId)) && <option value={recipientId}>{t('selectRecipient')}</option>}
                 {recipients.map((item) => (
                   <option key={item.id} value={item.id}>{item.name} — {item.country} ({item.currency})</option>
                 ))}
@@ -171,7 +284,7 @@ function App() {
               <label htmlFor="amount">{t('amountToSend')}</label>
               <input id="amount" name="amount" type="number" inputMode="decimal" min="0.01" max="1000000"
                 step="0.01" required value={amount} onChange={(event) => {
-                  setAmount(event.target.value); setQuote(null); setError('');
+                  setAmount(event.target.value); setDraftDirty(true); setQuote(null); setError('');
                 }} />
               <button type="submit">{t('getQuote')}</button>
             </fieldset>
@@ -179,23 +292,22 @@ function App() {
           {quote && <section aria-labelledby="quote-heading">
             <h2 id="quote-heading">{t('quoteSummary', { name: recipient?.name })}</h2>
             <QuoteDetails quote={quote} t={t} />
-            <button disabled={busy} onClick={() => run(async () => {
-              await displayTransfer(await api('/transfers', 'POST', quote));
-              setQuote(null);
-            })}>{t('confirmAndSend')}</button>
+            {!live && <p>{t('reconnectBeforeSend')}</p>}
+            <button disabled={busy || !live || pendingSend} onClick={() => run(confirmTransfer)}>{t('confirmAndSend')}</button>
           </section>}
         </>
       ) : (
         <section aria-labelledby="transfer-heading">
           <h2 id="transfer-heading">{t('transferSuccessful')}</h2>
-          <p>{t('transferDetails', { id: transfer.id, name: recipient?.name })}</p>
+          <p>{t('transferDetails', { id: transfer.id, name: transferName || recipient?.name || transfer.recipient_id })}</p>
           <QuoteDetails quote={transfer} t={t} />
-          <p role="status">{t('transferStatus')} <strong>{statusLabel(transfer.status)}</strong></p>
+          <p role="status">{t(transferCached || !live ? 'savedTransferStatus' : 'transferStatus')} <strong>{statusLabel(transfer.status)}</strong></p>
           <p className="status-flow">{statuses.map(statusLabel).join(' → ')}</p>
           {(notifications.length > 0 || notificationLoading || notificationError) && (
             <section className="notification-card" aria-labelledby="notification-heading" aria-live="polite">
               <h3 id="notification-heading">{t('receiverNotification')}</h3>
               <p>{t('simulatedNotification')}</p>
+              {(notificationsCached || !live) && notifications.length > 0 && <p>{t('cachedNotifications')}</p>}
               {notificationLoading && <p role="status">{t('loadingNotifications')}</p>}
               {notificationError && <p role="alert">{t('notificationLoadFailed')}</p>}
               {notifications.map((notification) => (
@@ -209,16 +321,11 @@ function App() {
               ))}
             </section>
           )}
-          {nextStatus && <button disabled={busy} onClick={() => run(async () => {
+          {nextStatus && <button disabled={busy || !live || transferCached} onClick={() => run(async () => {
             await displayTransfer(await api(`/transfers/${transfer.id}/status`, 'PATCH', { status: nextStatus }));
           })}>{t('advanceStatus', { status: statusLabel(nextStatus) })}</button>}
-          <button disabled={busy} onClick={() => run(async () => {
-            await displayTransfer(await api(`/transfers/${transfer.id}`));
-          })}>{t('refreshStatus')}</button>
-          <button disabled={busy} onClick={() => {
-            setTransfer(null); setAmount(''); setError('');
-            setNotifications([]); setNotificationError(false);
-          }}>{t('startAnotherTransfer')}</button>
+          <button disabled={busy || !live} onClick={() => run(refreshTransfer)}>{t('refreshStatus')}</button>
+          <button disabled={busy} onClick={startAnotherTransfer}>{t('startAnotherTransfer')}</button>
         </section>
       )}
       {busy && <p role="status">{t('pleaseWait')}</p>}
