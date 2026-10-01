@@ -62,6 +62,25 @@ def initialize(path):
                 amount TEXT NOT NULL,
                 created_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS service_purchases (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                recipient_id INTEGER NOT NULL REFERENCES recipients(id),
+                service_type TEXT NOT NULL CHECK (service_type IN ('airtime', 'electricity', 'grocery_voucher')),
+                provider TEXT NOT NULL,
+                target_reference TEXT NOT NULL,
+                send_amount TEXT NOT NULL,
+                send_currency TEXT NOT NULL,
+                service_fee TEXT NOT NULL,
+                total_cost TEXT NOT NULL,
+                exchange_rate TEXT NOT NULL,
+                local_value TEXT NOT NULL,
+                local_currency TEXT NOT NULL,
+                status TEXT NOT NULL CHECK (status = 'Successful'),
+                fulfillment_reference TEXT NOT NULL UNIQUE,
+                electricity_token TEXT,
+                voucher_code TEXT,
+                created_at TEXT NOT NULL
+            );
         """)
         db.executemany(
             "INSERT OR IGNORE INTO recipients VALUES (?, ?, ?, ?)",

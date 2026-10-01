@@ -50,6 +50,22 @@ export async function api(path, method = 'GET', body) {
         key = fields.includes('protected_amount') ? 'saInvalidProtected' :
           fields.includes('amount') ? 'saInvalidWithdrawal' : 'saInvalidPin';
       }
+      if (path === '/service-quote' || path.startsWith('/service-purchases')) {
+        const serviceErrors = {
+          'Service unavailable for this recipient.': 'fsUnavailable',
+          'Service quote no longer matches.': 'fsQuoteChanged',
+          'Service purchase not found.': 'fsNotFound',
+          'Enter a Zimbabwe phone number in +263 format.': 'fsInvalidPhone',
+          'Enter a demo meter number of 6 to 20 digits.': 'fsInvalidMeter',
+          'Enter a delivery recipient.': 'fsInvalidDelivery',
+        };
+        if (typeof data.detail === 'string' && serviceErrors[data.detail]) key = serviceErrors[data.detail];
+        else if (response.status === 422) {
+          const fields = Array.isArray(data.detail) ? data.detail.map(error => error.loc?.at(-1)) : [];
+          key = fields.includes('amount') || fields.includes('send_amount') ? 'fsInvalidAmount' :
+            fields.includes('service_type') ? 'fsUnavailable' : 'fsInvalidData';
+        }
+      }
       throw new ApiError(key, 'application', response.status);
     }
     return data;

@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 from database import connect, initialize
 from models import Notification, Quote, QuoteRequest, Recipient, StatusUpdate, Transfer
 from safe_access import register_routes, real_remaining
+from services import register_service_routes
 
 # Demo values only: units of recipient currency per 1 ZAR.
 MOCK_RATES = {"USD": Decimal("0.055"), "BWP": Decimal("0.75")}
@@ -70,6 +71,7 @@ def create_app(database_path=None):
         ]})
 
     register_routes(app, path, connect, get_transfer)
+    register_service_routes(app, path, connect, get_recipient, MOCK_RATES)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],

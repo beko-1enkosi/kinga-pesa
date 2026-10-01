@@ -7,6 +7,7 @@ import { api } from './api';
 import { keys, readStored, writeStored, storageAvailable } from './storage';
 import { useConnection } from './useConnection';
 import RecipientAccess from './RecipientAccess';
+import FamilyServices from './FamilyServices';
 
 const statuses = ['Sent', 'In Transit', 'Ready to Collect', 'Collected'];
 const money = (amount, currency) => `${currency} ${Number(amount).toFixed(2)}`;
@@ -24,6 +25,8 @@ function QuoteDetails({ quote, t }) {
 }
 
 function App() {
+  const [senderArea, setSenderArea] = useState('money');
+  const [serviceBusy, setServiceBusy] = useState(false);
   const [recipientOpen, setRecipientOpen] = useState(false);
   const [saved] = useState(() => {
     const draft = readStored(keys.draft, {});
@@ -262,6 +265,10 @@ function App() {
       <p role="status" className="connection-status">{t(connectionText)}</p>
       {connection === 'weak' && <button disabled={busy} onClick={checkConnection}>{t('retryConnection')}</button>}
       {!canSave && <p role="alert">{t('storageUnavailable')}</p>}
+      <nav aria-label={t('fsChoose')}>
+        <button disabled={busy || serviceBusy} aria-pressed={senderArea === 'money'} onClick={() => setSenderArea('money')}>{t('sendMoney')}</button>
+        <button disabled={busy || serviceBusy} aria-pressed={senderArea === 'services'} onClick={() => setSenderArea('services')}>{t('fsSupport')}</button>
+      </nav>
       <aside className="data-access" aria-labelledby="data-access-heading">
         <h2 id="data-access-heading">{t('dataAccess')}</h2>
         <p>{t('dataAccessExplanation')}</p>
@@ -277,6 +284,9 @@ function App() {
         <p>{t('dataLightExplanation')}</p>
         <p>{t(offlineReady ? 'offlineReloadReady' : 'offlineReloadNotReady')}</p>
       </aside>
+      {senderArea === 'services' ? <FamilyServices recipients={recipients} loadRecipients={loadRecipients}
+        live={live} healthEpoch={healthEpoch} reportFailure={reportFailure} t={t}
+        onBusy={setServiceBusy} onBack={() => setSenderArea('money')} /> : <>
       <p>{t('introduction')}</p>
       <p>{t('feeExplanation')}</p>
       {error && <p role="alert" className="error">{t(error)}</p>}
@@ -349,6 +359,7 @@ function App() {
         </section>
       )}
       {busy && <p role="status">{t('pleaseWait')}</p>}
+      </>}
     </main>
   );
 }

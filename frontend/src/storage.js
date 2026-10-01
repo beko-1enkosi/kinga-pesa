@@ -5,6 +5,8 @@ export const keys = {
   dataLight: 'kingapesa.dataLight',
   sponsoredDemo: 'kingapesa.sponsoredDemo',
   pendingSend: 'kingapesa.pendingSend',
+  currentServicePurchase: 'kingapesa.currentServicePurchase',
+  pendingServicePurchase: 'kingapesa.pendingServicePurchase',
 };
 
 export function readStored(key, fallback) {
