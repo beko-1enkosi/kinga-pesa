@@ -4,6 +4,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from pricing import SenderCurrency
+
 Money = Annotated[Decimal, Field(ge=0, max_digits=12, decimal_places=2)]
 Status = Literal["Sent", "In Transit", "Ready to Collect", "Collected"]
 
@@ -19,13 +21,14 @@ class QuoteRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     recipient_id: int = Field(gt=0, strict=True)
     amount: Decimal = Field(gt=0, le=1_000_000, decimal_places=2)
+    send_currency: SenderCurrency = "ZAR"
 
 
 class Quote(BaseModel):
     model_config = ConfigDict(extra="forbid")
     recipient_id: int = Field(gt=0, strict=True)
     send_amount: Money
-    send_currency: Literal["ZAR"]
+    send_currency: SenderCurrency
     exchange_rate: Decimal = Field(gt=0, max_digits=10, decimal_places=6)
     fee: Money
     total_cost: Money

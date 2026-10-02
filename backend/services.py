@@ -1,6 +1,6 @@
 """Local-only demo fulfilment. No provider clients, credentials or network calls."""
 from datetime import datetime, timezone
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal
 import re
 import secrets
 from typing import Literal
@@ -9,6 +9,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
 from models import Money
+from pricing import SenderCurrency, get_rate, round_money
 
 ServiceType = Literal['airtime', 'electricity', 'grocery_voucher']
 SERVICE_CATALOG = {
@@ -25,6 +26,7 @@ class ServiceQuoteRequest(BaseModel):
     recipient_id: int = Field(gt=0, strict=True)
     service_type: ServiceType
     amount: Decimal = Field(gt=0, le=100_000, decimal_places=2)
+    send_currency: SenderCurrency = 'ZAR'
 
 
 class ServiceQuote(BaseModel):
@@ -33,7 +35,7 @@ class ServiceQuote(BaseModel):
     service_type: ServiceType
     provider: str = Field(min_length=1, max_length=100)
     send_amount: Decimal = Field(gt=0, le=100_000, decimal_places=2)
-    send_currency: Literal['ZAR']
+    send_currency: SenderCurrency
     service_fee: Money
     total_cost: Money
     exchange_rate: Decimal = Field(gt=0, max_digits=10, decimal_places=6)
@@ -57,17 +59,17 @@ class ServicePurchase(ServiceQuote):
     created_at: datetime
 
 
-def calculate_service_quote(recipient, service_type, amount, rates):
+def calculate_service_quote(recipient, service_type, amount, send_currency='ZAR'):
     service = SERVICE_CATALOG.get(recipient['country'], {}).get(service_type)
     if service is None:
         raise HTTPException(422, 'Service unavailable for this recipient.')
-    rate = rates[service['currency']]
-    amount = amount.quantize(Decimal('0.01'))
+    rate = get_rate(send_currency, service['currency'])
+    amount = round_money(amount)
     return ServiceQuote(
         recipient_id=recipient['id'], service_type=service_type,
-        provider=service['provider'], send_amount=amount, send_currency='ZAR',
+        provider=service['provider'], send_amount=amount, send_currency=send_currency,
         service_fee=Decimal('0.00'), total_cost=amount, exchange_rate=rate,
-        local_value=(amount * rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+        local_value=round_money(amount * rate),
         local_currency=service['currency'],
     )
 
@@ -108,7 +110,7 @@ def get_purchase(db, purchase_id):
     return dict(row)
 
 
-def register_service_routes(app, path, connect, get_recipient, rates):
+def register_service_routes(app, path, connect, get_recipient):
     @app.get('/recipients/{recipient_id}/services')
     def catalog(recipient_id: int):
         with connect(path) as db:
@@ -119,14 +121,14 @@ def register_service_routes(app, path, connect, get_recipient, rates):
     @app.post('/service-quote', response_model=ServiceQuote)
     def quote(request: ServiceQuoteRequest):
         with connect(path) as db:
-            return calculate_service_quote(get_recipient(db, request.recipient_id), request.service_type, request.amount, rates)
+            return calculate_service_quote(get_recipient(db, request.recipient_id), request.service_type, request.amount, request.send_currency)
 
     @app.post('/service-purchases', response_model=ServicePurchase, status_code=201)
     def purchase(request: ServicePurchaseRequest):
         with connect(path) as db:
             db.execute('BEGIN IMMEDIATE')
             confirmed = request.quote
-            expected = calculate_service_quote(get_recipient(db, confirmed.recipient_id), confirmed.service_type, confirmed.send_amount, rates)
+            expected = calculate_service_quote(get_recipient(db, confirmed.recipient_id), confirmed.service_type, confirmed.send_amount, confirmed.send_currency)
             if confirmed != expected:
                 raise HTTPException(409, 'Service quote no longer matches.')
             target = validate_target(expected.service_type, request.target_reference)

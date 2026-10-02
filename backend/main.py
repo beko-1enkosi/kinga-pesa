@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -13,25 +13,22 @@ from database import connect, initialize
 from models import Notification, Quote, QuoteRequest, Recipient, StatusUpdate, Transfer
 from safe_access import register_routes, real_remaining
 from services import register_service_routes
+from pricing import get_rate, remittance_fee, round_money
 
-# Demo values only: units of recipient currency per 1 ZAR.
-MOCK_RATES = {"USD": Decimal("0.055"), "BWP": Decimal("0.75")}
 STATUSES = ["Sent", "In Transit", "Ready to Collect", "Collected"]
 
 
-def calculate_quote(recipient, amount):
-    rate = MOCK_RATES[recipient["currency"]]
-    fee = (Decimal("10") + amount * Decimal("0.02")).quantize(
-        Decimal("0.01"), rounding=ROUND_HALF_UP
-    )
+def calculate_quote(recipient, amount, send_currency="ZAR"):
+    rate = get_rate(send_currency, recipient["currency"])
+    fee = remittance_fee(amount, send_currency)
     return Quote(
         recipient_id=recipient["id"],
         send_amount=amount,
-        send_currency="ZAR",
+        send_currency=send_currency,
         exchange_rate=rate,
         fee=fee,
         total_cost=amount + fee,
-        receive_amount=(amount * rate).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+        receive_amount=round_money(amount * rate),
         receive_currency=recipient["currency"],
     )
 
@@ -71,7 +68,7 @@ def create_app(database_path=None):
         ]})
 
     register_routes(app, path, connect, get_transfer)
-    register_service_routes(app, path, connect, get_recipient, MOCK_RATES)
+    register_service_routes(app, path, connect, get_recipient)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -91,16 +88,16 @@ def create_app(database_path=None):
     @app.post("/quote", response_model=Quote)
     def quote(request: QuoteRequest):
         with connect(path) as db:
-            return calculate_quote(get_recipient(db, request.recipient_id), request.amount)
+            return calculate_quote(get_recipient(db, request.recipient_id), request.amount, request.send_currency)
 
     @app.post("/transfers", response_model=Transfer, status_code=201)
     def create_transfer(confirmed_quote: Quote):
         # The client submits the displayed quote. Recalculate to reject altered totals.
         if not Decimal("0") < confirmed_quote.send_amount <= Decimal("1000000"):
-            raise HTTPException(422, "Send amount must be greater than 0 and at most 1,000,000 ZAR")
+            raise HTTPException(422, f"Send amount must be greater than 0 and at most 1,000,000 {confirmed_quote.send_currency}")
         with connect(path) as db:
             expected = calculate_quote(
-                get_recipient(db, confirmed_quote.recipient_id), confirmed_quote.send_amount
+                get_recipient(db, confirmed_quote.recipient_id), confirmed_quote.send_amount, confirmed_quote.send_currency
             )
             if confirmed_quote != expected:
                 raise HTTPException(409, "Quote no longer matches. Please get a new quote.")

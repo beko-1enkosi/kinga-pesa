@@ -1,4 +1,5 @@
 export const keys = {
+  senderCountry: 'kingapesa.senderCountry',
   draft: 'kingapesa.draft',
   recipients: 'kingapesa.recipients',
   currentTransfer: 'kingapesa.currentTransfer',

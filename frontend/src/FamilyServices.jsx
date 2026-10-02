@@ -12,12 +12,12 @@ function ServiceDetails({ quote, t }) {
     <dt>{t('youSend')}</dt><dd>{money(quote.send_amount, quote.send_currency)}</dd>
     <dt>{t('fsServiceFee')}</dt><dd>{money(quote.service_fee, quote.send_currency)}</dd>
     <dt>{t('totalYouPay')}</dt><dd>{money(quote.total_cost, quote.send_currency)}</dd>
-    <dt>{t('exchangeRate')}</dt><dd>1 ZAR = {quote.exchange_rate} {quote.local_currency}</dd>
+    <dt>{t('exchangeRate')}</dt><dd>1 {quote.send_currency} = {quote.exchange_rate} {quote.local_currency}</dd>
     <dt>{t(`fsValue.${quote.service_type}`)}</dt><dd>{money(quote.local_value, quote.local_currency)}</dd>
   </dl>;
 }
 
-export default function FamilyServices({ recipients, loadRecipients, live, healthEpoch, reportFailure, t, onBusy, onBack }) {
+export default function FamilyServices({ sendCurrency, recipients, loadRecipients, live, healthEpoch, reportFailure, t, onBusy, onBack }) {
   const [recipientId, setRecipientId] = useState(String(recipients[0]?.id || ''));
   const [catalog, setCatalog] = useState(null);
   const [serviceType, setServiceType] = useState('');
@@ -43,6 +43,13 @@ export default function FamilyServices({ recipients, loadRecipients, live, healt
   useEffect(() => {
     if (!live) { quoteRevision.current += 1; setQuote(null); }
   }, [live]);
+
+  useEffect(() => {
+    quoteRevision.current += 1;
+    setQuote(null);
+    setError('');
+    // Currency changes never reset a purchase or its uncertainty marker.
+  }, [sendCurrency]);
 
   function handleError(err) { reportFailure(err); setError(err.message || 'requestFailed'); }
   function store(key, value) {
@@ -95,15 +102,16 @@ export default function FamilyServices({ recipients, loadRecipients, live, healt
     if (!recipient || !catalog?.services.some(item => item.type === serviceType)) { setError('fsUnavailable'); return; }
     run(async () => {
       const revision = quoteRevision.current;
-      const result = await api('/service-quote', 'POST', { recipient_id: Number(recipientId), service_type: serviceType, amount });
+      const result = await api('/service-quote', 'POST', { recipient_id: Number(recipientId), service_type: serviceType, amount, send_currency: sendCurrency });
       if (revision === quoteRevision.current && navigator.onLine) setQuote(result);
     });
   }
 
   async function confirm() {
-    if (!quote || pending || readStored(keys.pendingServicePurchase, null)) { setPending(true); return; }
+    if (!quote || quote.send_currency !== sendCurrency) return;
+    if (pending || readStored(keys.pendingServicePurchase, null)) { setPending(true); return; }
     // Save a marker BEFORE POST. Storage failure must not permit an untracked send.
-    if (!store(keys.pendingServicePurchase, { createdAt: new Date().toISOString() })) return;
+    if (!store(keys.pendingServicePurchase, { sendCurrency: quote.send_currency, createdAt: new Date().toISOString() })) return;
     setPending(true);
     let result;
     try {
@@ -134,7 +142,7 @@ export default function FamilyServices({ recipients, loadRecipients, live, healt
   return <section aria-labelledby="family-services-heading">
     <h2 id="family-services-heading">{t('fsSupport')}</h2>
     {!live && <p role="status">{t('fsReconnect')}</p>}
-    {error && <p role="alert">{t(error)}</p>}
+    {error && <p role="alert">{t(error, { currency: sendCurrency })}</p>}
     {pending && !purchase && !blocked && <p role="alert">{t('fsUncertain')}</p>}
     {purchase ? <section aria-labelledby="service-success-heading">
       <h3 id="service-success-heading">{t(`fsSuccess.${purchase.service_type}`)}</h3>
@@ -172,13 +180,13 @@ export default function FamilyServices({ recipients, loadRecipients, live, healt
               autoComplete="off" maxLength={100} value={target} onChange={event => { setTarget(event.target.value); edit(); }} />
             {serviceType === 'airtime' && <p>{t('fsPhoneHint')}</p>}
           </>}
-          <label htmlFor="service-amount">{t('amountToSend')}</label>
+          <label htmlFor="service-amount">{t('amountToSend', { currency: sendCurrency })}</label>
           <input id="service-amount" name="service-amount" type="number" inputMode="decimal" min="0.01" max="100000" step="0.01" required
             value={amount} onChange={event => { setAmount(event.target.value); edit(); }} />
           <button type="submit" disabled={!live}>{t('getQuote')}</button>
         </fieldset>
       </form>}
-      {quote && <section aria-labelledby="service-quote-heading">
+      {quote?.send_currency === sendCurrency && <section aria-labelledby="service-quote-heading">
         <h3 id="service-quote-heading">{t('quoteSummary', { name: recipient?.name })}</h3>
         <ServiceDetails quote={quote} t={t} />
         <p>{t('fsRecipientValue', { name: recipient?.name, value: money(quote.local_value, quote.local_currency), service: t(`fsType.${quote.service_type}`) })}</p>

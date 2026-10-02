@@ -8,6 +8,7 @@ import { keys, readStored, writeStored, storageAvailable } from './storage';
 import { useConnection } from './useConnection';
 import RecipientAccess from './RecipientAccess';
 import FamilyServices from './FamilyServices';
+import { senders, fixedFeeLabels, readSenderCountry } from './sender';
 
 const statuses = ['Sent', 'In Transit', 'Ready to Collect', 'Collected'];
 const money = (amount, currency) => `${currency} ${Number(amount).toFixed(2)}`;
@@ -17,7 +18,7 @@ function QuoteDetails({ quote, t }) {
     <dl>
       <dt>{t('youSend')}</dt><dd>{money(quote.send_amount, quote.send_currency)}</dd>
       <dt>{t('transferFee')}</dt><dd>{money(quote.fee, quote.send_currency)}</dd>
-      <dt>{t('exchangeRate')}</dt><dd>1 ZAR = {quote.exchange_rate} {quote.receive_currency}</dd>
+      <dt>{t('exchangeRate')}</dt><dd>1 {quote.send_currency} = {quote.exchange_rate} {quote.receive_currency}</dd>
       <dt>{t('totalYouPay')}</dt><dd>{money(quote.total_cost, quote.send_currency)}</dd>
       <dt>{t('recipientReceives')}</dt><dd>{money(quote.receive_amount, quote.receive_currency)}</dd>
     </dl>
@@ -38,6 +39,8 @@ function App() {
       recipients: Array.isArray(recipients) ? recipients.filter(item => item?.id && item.name && item.currency) : [],
     };
   });
+  const [senderCountry, setSenderCountry] = useState(() => readSenderCountry(saved.draft));
+  const sendCurrency = senders.find(sender => sender.country === senderCountry).currency;
   const [language, setLanguage] = useState(() =>
     languages.some(item => item.code === saved.draft.language) ? saved.draft.language : readLanguage());
   const t = (key, values) => translate(language, key, values);
@@ -78,9 +81,20 @@ function App() {
     catch { setCanSave(false); }
   }, [language]);
 
+  useEffect(() => { save(keys.senderCountry, senderCountry); }, [senderCountry]);
+
   useEffect(() => {
-    if (draftDirty && !transfer) save(keys.draft, { recipientId, amount, language });
-  }, [recipientId, amount, language, draftDirty, transfer]);
+    if (draftDirty && !transfer) save(keys.draft, { recipientId, amount, language, sendCurrency });
+  }, [recipientId, amount, language, sendCurrency, draftDirty, transfer]);
+
+  function changeSender(country) {
+    if (!senders.some(sender => sender.country === country)) return;
+    setSenderCountry(country);
+    setQuote(null);
+    quoteStale.current = false;
+    setError('');
+    // Neither transaction history nor uncertainty markers are changed here.
+  }
 
   useEffect(() => {
     if (connection === 'offline' || connection === 'weak') {
@@ -183,17 +197,18 @@ function App() {
       return;
     }
     run(async () => {
-      const latest = await api('/quote', 'POST', { recipient_id: Number(recipientId), amount });
+      const latest = await api('/quote', 'POST', { recipient_id: Number(recipientId), amount, send_currency: sendCurrency });
       setQuote(latest);
       quoteStale.current = false;
     });
   }
 
   async function confirmTransfer() {
-    if (!navigator.onLine || connection !== 'online' || pendingSend) return;
+    if (!navigator.onLine || connection !== 'online' || !quote || quote.send_currency !== sendCurrency) return;
+    if (pendingSend || readStored(keys.pendingSend, null)) { setPendingSend(true); return; }
     let confirmed = quote;
     if (quoteStale.current) {
-      const latest = await api('/quote', 'POST', { recipient_id: quote.recipient_id, amount: quote.send_amount });
+      const latest = await api('/quote', 'POST', { recipient_id: quote.recipient_id, amount: quote.send_amount, send_currency: quote.send_currency });
       const numeric = ['send_amount', 'fee', 'exchange_rate', 'total_cost', 'receive_amount'];
       const changed = numeric.some(key => Number(latest[key]) !== Number(quote[key])) ||
         latest.receive_currency !== quote.receive_currency || latest.send_currency !== quote.send_currency;
@@ -203,7 +218,7 @@ function App() {
       confirmed = latest;
     }
     // Persist an uncertainty marker before sending. Never automatically retry a POST.
-    save(keys.pendingSend, { recipientId: confirmed.recipient_id, amount: confirmed.send_amount, createdAt: new Date().toISOString() });
+    save(keys.pendingSend, { recipientId: confirmed.recipient_id, amount: confirmed.send_amount, sendCurrency: confirmed.send_currency, createdAt: new Date().toISOString() });
     setPendingSend(true);
     let created;
     try { created = await api('/transfers', 'POST', confirmed); }
@@ -265,6 +280,13 @@ function App() {
       <p role="status" className="connection-status">{t(connectionText)}</p>
       {connection === 'weak' && <button disabled={busy} onClick={checkConnection}>{t('retryConnection')}</button>}
       {!canSave && <p role="alert">{t('storageUnavailable')}</p>}
+      <label htmlFor="sender-country">{t('sendingFrom')}</label>
+      <select id="sender-country" value={senderCountry} disabled={busy || serviceBusy}
+        onChange={event => changeSender(event.target.value)}>
+        {senders.map(sender => <option key={sender.country} value={sender.country}>
+          {t(`senderCountry.${sender.country}`)} {sender.flag} — {sender.currency}
+        </option>)}
+      </select>
       <nav aria-label={t('fsChoose')}>
         <button disabled={busy || serviceBusy} aria-pressed={senderArea === 'money'} onClick={() => setSenderArea('money')}>{t('sendMoney')}</button>
         <button disabled={busy || serviceBusy} aria-pressed={senderArea === 'services'} onClick={() => setSenderArea('services')}>{t('fsSupport')}</button>
@@ -284,12 +306,12 @@ function App() {
         <p>{t('dataLightExplanation')}</p>
         <p>{t(offlineReady ? 'offlineReloadReady' : 'offlineReloadNotReady')}</p>
       </aside>
-      {senderArea === 'services' ? <FamilyServices recipients={recipients} loadRecipients={loadRecipients}
+      {senderArea === 'services' ? <FamilyServices sendCurrency={sendCurrency} recipients={recipients} loadRecipients={loadRecipients}
         live={live} healthEpoch={healthEpoch} reportFailure={reportFailure} t={t}
         onBusy={setServiceBusy} onBack={() => setSenderArea('money')} /> : <>
       <p>{t('introduction')}</p>
-      <p>{t('feeExplanation')}</p>
-      {error && <p role="alert" className="error">{t(error)}</p>}
+      <p>{t('feeExplanation', { currency: transfer?.send_currency || sendCurrency, fixedFee: fixedFeeLabels[transfer?.send_currency || sendCurrency] })}</p>
+      {error && <p role="alert" className="error">{t(error, { currency: sendCurrency })}</p>}
       {pendingSend && !transfer && !busy && <p role="alert">{t('sendUncertain')}</p>}
       {!transfer ? (
         <>
@@ -310,7 +332,7 @@ function App() {
                   <option key={item.id} value={item.id}>{item.name} — {item.country} ({item.currency})</option>
                 ))}
               </select>
-              <label htmlFor="amount">{t('amountToSend')}</label>
+              <label htmlFor="amount">{t('amountToSend', { currency: sendCurrency })}</label>
               <input id="amount" name="amount" type="number" inputMode="decimal" min="0.01" max="1000000"
                 step="0.01" required value={amount} onChange={(event) => {
                   setAmount(event.target.value); setDraftDirty(true); setQuote(null); setError('');
@@ -318,7 +340,7 @@ function App() {
               <button type="submit">{t('getQuote')}</button>
             </fieldset>
           </form>
-          {quote && <section aria-labelledby="quote-heading">
+          {quote?.send_currency === sendCurrency && <section aria-labelledby="quote-heading">
             <h2 id="quote-heading">{t('quoteSummary', { name: recipient?.name })}</h2>
             <QuoteDetails quote={quote} t={t} />
             {!live && <p>{t('reconnectBeforeSend')}</p>}
