@@ -5,7 +5,7 @@ import { createRoot } from 'react-dom/client';
 const routes = {
   '/demo': lazy(() => import('./DemoApp')),
   '/login': lazy(() => import('./Login')),
-  '/app': lazy(() => import('./AppPlaceholder')),
+  '/app': lazy(() => import('./Dashboard')),
 };
 const Welcome = lazy(() => import('./Welcome'));
 const Page = routes[window.location.pathname.replace(/\/$/, '')] || Welcome;

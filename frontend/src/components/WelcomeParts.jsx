@@ -17,7 +17,7 @@ export function Icon({ name, ...props }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>{paths[name]}</svg>;
 }
 
-export function Navbar({ language, onLanguageChange, onSignIn, back = false }) {
+export function Navbar({ language, onLanguageChange, onSignIn, back = false, profile = false }) {
   return <header className="kp-header">
     <nav className="kp-nav kp-container" aria-label="Main navigation">
       <a className="kp-brand" href="/" aria-label="KingaPesa home">Kinga<span>Pesa</span><span className="kp-brand-dot" aria-hidden="true">.</span></a>
@@ -28,7 +28,8 @@ export function Navbar({ language, onLanguageChange, onSignIn, back = false }) {
             {languages.map(item => <option key={item.code} value={item.code}>{item.name}</option>)}
           </select><span aria-hidden="true">⌄</span>
         </label>
-        {back ? <a className="kp-button kp-button-small kp-back" href="/">← Back</a>
+        {profile ? <div className="kp-profile" aria-label="Demo profile: Naledi"><span className="kp-avatar" aria-hidden="true">N</span><span className="kp-profile-name">Naledi<span>Personal account · Demo</span></span></div>
+          : back ? <a className="kp-button kp-button-small kp-back" href="/">← Back</a>
           : <button className="kp-button kp-button-small" onClick={onSignIn}>Sign In <Icon name="arrow" /></button>}
       </div>
     </nav>
