@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -21,6 +22,7 @@ STATUSES = ["Sent", "In Transit", "Ready to Collect", "Collected"]
 def calculate_quote(recipient, amount, send_currency="ZAR"):
     rate = get_rate(send_currency, recipient["currency"])
     fee = remittance_fee(amount, send_currency)
+
     return Quote(
         recipient_id=recipient["id"],
         send_amount=amount,
@@ -34,16 +36,26 @@ def calculate_quote(recipient, amount, send_currency="ZAR"):
 
 
 def get_recipient(db, recipient_id):
-    row = db.execute("SELECT * FROM recipients WHERE id = ?", (recipient_id,)).fetchone()
+    row = db.execute(
+        "SELECT * FROM recipients WHERE id = ?",
+        (recipient_id,),
+    ).fetchone()
+
     if row is None:
         raise HTTPException(404, "Recipient not found")
+
     return row
 
 
 def get_transfer(db, transfer_id):
-    row = db.execute("SELECT * FROM transfers WHERE id = ?", (transfer_id,)).fetchone()
+    row = db.execute(
+        "SELECT * FROM transfers WHERE id = ?",
+        (transfer_id,),
+    ).fetchone()
+
     if row is None:
         raise HTTPException(404, "Transfer not found")
+
     return dict(row)
 
 
@@ -55,23 +67,56 @@ def create_app(database_path=None):
         initialize(path)
         yield
 
-    app = FastAPI(title="KingaPesa MVP", lifespan=lifespan)
+    app = FastAPI(
+        title="KingaPesa MVP",
+        lifespan=lifespan,
+    )
 
     @app.exception_handler(RequestValidationError)
     async def validation_error(request, exc):
-        if not request.url.path.endswith(("/safe-access", "/recipient-access", "/withdrawals")):
+        if not request.url.path.endswith(
+            ("/safe-access", "/recipient-access", "/withdrawals")
+        ):
             return await request_validation_exception_handler(request, exc)
+
         # Pydantic errors can contain raw request inputs, including PINs.
-        return JSONResponse(status_code=422, content={"detail": [
-            {"loc": error["loc"], "type": error["type"], "msg": "Invalid value"}
-            for error in exc.errors()
-        ]})
+        return JSONResponse(
+            status_code=422,
+            content={
+                "detail": [
+                    {
+                        "loc": error["loc"],
+                        "type": error["type"],
+                        "msg": "Invalid value",
+                    }
+                    for error in exc.errors()
+                ]
+            },
+        )
 
     register_routes(app, path, connect, get_transfer)
     register_service_routes(app, path, connect, get_recipient)
+
+    # Local development origins.
+    default_origins = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+
+    # Production frontend origins can be configured in Render using:
+    #
+    # FRONTEND_ORIGINS=https://kinga-pesa.vercel.app,http://localhost:5173
+    configured_origins = [
+        origin.strip()
+        for origin in os.getenv("FRONTEND_ORIGINS", "").split(",")
+        if origin.strip()
+    ]
+
+    allowed_origins = configured_origins or default_origins
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+        allow_origins=allowed_origins,
         allow_methods=["GET", "POST", "PATCH"],
         allow_headers=["Content-Type"],
     )
@@ -83,93 +128,268 @@ def create_app(database_path=None):
     @app.get("/recipients", response_model=list[Recipient])
     def recipients():
         with connect(path) as db:
-            return [dict(row) for row in db.execute("SELECT * FROM recipients ORDER BY id")]
+            return [
+                dict(row)
+                for row in db.execute(
+                    "SELECT * FROM recipients ORDER BY id"
+                )
+            ]
 
     @app.post("/quote", response_model=Quote)
     def quote(request: QuoteRequest):
         with connect(path) as db:
-            return calculate_quote(get_recipient(db, request.recipient_id), request.amount, request.send_currency)
-
-    @app.post("/transfers", response_model=Transfer, status_code=201)
-    def create_transfer(confirmed_quote: Quote):
-        # The client submits the displayed quote. Recalculate to reject altered totals.
-        if not Decimal("0") < confirmed_quote.send_amount <= Decimal("1000000"):
-            raise HTTPException(422, f"Send amount must be greater than 0 and at most 1,000,000 {confirmed_quote.send_currency}")
-        with connect(path) as db:
-            expected = calculate_quote(
-                get_recipient(db, confirmed_quote.recipient_id), confirmed_quote.send_amount, confirmed_quote.send_currency
+            recipient = get_recipient(
+                db,
+                request.recipient_id,
             )
+
+            return calculate_quote(
+                recipient,
+                request.amount,
+                request.send_currency,
+            )
+
+    @app.post(
+        "/transfers",
+        response_model=Transfer,
+        status_code=201,
+    )
+    def create_transfer(confirmed_quote: Quote):
+        # The client submits the displayed quote.
+        # Recalculate to reject altered totals.
+        if not Decimal("0") < confirmed_quote.send_amount <= Decimal("1000000"):
+            raise HTTPException(
+                422,
+                (
+                    "Send amount must be greater than 0 and at most "
+                    f"1,000,000 {confirmed_quote.send_currency}"
+                ),
+            )
+
+        with connect(path) as db:
+            recipient = get_recipient(
+                db,
+                confirmed_quote.recipient_id,
+            )
+
+            expected = calculate_quote(
+                recipient,
+                confirmed_quote.send_amount,
+                confirmed_quote.send_currency,
+            )
+
             if confirmed_quote != expected:
-                raise HTTPException(409, "Quote no longer matches. Please get a new quote.")
+                raise HTTPException(
+                    409,
+                    "Quote no longer matches. Please get a new quote.",
+                )
+
             # Decimal values are stored as text to preserve exact monetary amounts.
             values = expected.model_dump(mode="json")
-            values.update(status="Sent", created_at=datetime.now(timezone.utc).isoformat())
+
+            values.update(
+                status="Sent",
+                created_at=datetime.now(timezone.utc).isoformat(),
+            )
+
             cursor = db.execute(
-                """INSERT INTO transfers (
-                    recipient_id, send_amount, send_currency, exchange_rate, fee,
-                    total_cost, receive_amount, receive_currency, status, created_at
-                ) VALUES (
-                    :recipient_id, :send_amount, :send_currency, :exchange_rate, :fee,
-                    :total_cost, :receive_amount, :receive_currency, :status, :created_at
-                )""",
+                """
+                INSERT INTO transfers (
+                    recipient_id,
+                    send_amount,
+                    send_currency,
+                    exchange_rate,
+                    fee,
+                    total_cost,
+                    receive_amount,
+                    receive_currency,
+                    status,
+                    created_at
+                )
+                VALUES (
+                    :recipient_id,
+                    :send_amount,
+                    :send_currency,
+                    :exchange_rate,
+                    :fee,
+                    :total_cost,
+                    :receive_amount,
+                    :receive_currency,
+                    :status,
+                    :created_at
+                )
+                """,
                 values,
             )
-            return get_transfer(db, cursor.lastrowid)
 
-    @app.get("/transfers/{transfer_id}", response_model=Transfer)
+            return get_transfer(
+                db,
+                cursor.lastrowid,
+            )
+
+    @app.get(
+        "/transfers/{transfer_id}",
+        response_model=Transfer,
+    )
     def transfer(transfer_id: int):
         with connect(path) as db:
-            return get_transfer(db, transfer_id)
+            return get_transfer(
+                db,
+                transfer_id,
+            )
 
-    @app.get("/transfers/{transfer_id}/notifications", response_model=list[Notification])
+    @app.get(
+        "/transfers/{transfer_id}/notifications",
+        response_model=list[Notification],
+    )
     def notifications(transfer_id: int):
         with connect(path) as db:
-            get_transfer(db, transfer_id)
+            get_transfer(
+                db,
+                transfer_id,
+            )
+
             rows = db.execute(
-                """SELECT n.*, r.name AS recipient_name,
-                          t.receive_amount, t.receive_currency
-                   FROM notifications n
-                   JOIN recipients r ON r.id = n.recipient_id
-                   JOIN transfers t ON t.id = n.transfer_id
-                   WHERE n.transfer_id = ? ORDER BY n.id""",
+                """
+                SELECT
+                    n.*,
+                    r.name AS recipient_name,
+                    t.receive_amount,
+                    t.receive_currency
+                FROM notifications n
+                JOIN recipients r
+                    ON r.id = n.recipient_id
+                JOIN transfers t
+                    ON t.id = n.transfer_id
+                WHERE n.transfer_id = ?
+                ORDER BY n.id
+                """,
                 (transfer_id,),
             ).fetchall()
-            return [dict(row) for row in rows]
 
-    @app.patch("/transfers/{transfer_id}/status", response_model=Transfer)
-    def update_status(transfer_id: int, request: StatusUpdate):
+            return [
+                dict(row)
+                for row in rows
+            ]
+
+    @app.patch(
+        "/transfers/{transfer_id}/status",
+        response_model=Transfer,
+    )
+    def update_status(
+        transfer_id: int,
+        request: StatusUpdate,
+    ):
         with connect(path) as db:
             # Serialize demo status updates so concurrent requests cannot skip steps.
             db.execute("BEGIN IMMEDIATE")
-            current = get_transfer(db, transfer_id)
-            index = STATUSES.index(current["status"])
-            next_status = STATUSES[index + 1] if index < len(STATUSES) - 1 else None
+
+            current = get_transfer(
+                db,
+                transfer_id,
+            )
+
+            index = STATUSES.index(
+                current["status"]
+            )
+
+            next_status = (
+                STATUSES[index + 1]
+                if index < len(STATUSES) - 1
+                else None
+            )
+
             if request.status != next_status:
-                detail = f"Next allowed status: {next_status}" if next_status else "Transfer is already Collected"
-                raise HTTPException(409, detail)
-            if request.status == "Collected" and db.execute(
-                "SELECT 1 FROM safe_access WHERE transfer_id = ?", (transfer_id,)
-            ).fetchone() and real_remaining(db, current) > 0:
-                raise HTTPException(409, "Collect remaining funds through recipient access.")
-            db.execute("UPDATE transfers SET status = ? WHERE id = ?", (request.status, transfer_id))
+                detail = (
+                    f"Next allowed status: {next_status}"
+                    if next_status
+                    else "Transfer is already Collected"
+                )
+
+                raise HTTPException(
+                    409,
+                    detail,
+                )
+
+            safe_access_exists = db.execute(
+                """
+                SELECT 1
+                FROM safe_access
+                WHERE transfer_id = ?
+                """,
+                (transfer_id,),
+            ).fetchone()
+
+            if (
+                request.status == "Collected"
+                and safe_access_exists
+                and real_remaining(db, current) > 0
+            ):
+                raise HTTPException(
+                    409,
+                    "Collect remaining funds through recipient access.",
+                )
+
+            db.execute(
+                """
+                UPDATE transfers
+                SET status = ?
+                WHERE id = ?
+                """,
+                (
+                    request.status,
+                    transfer_id,
+                ),
+            )
+
             if request.status == "Ready to Collect":
-                recipient = get_recipient(db, current["recipient_id"])
+                recipient = get_recipient(
+                    db,
+                    current["recipient_id"],
+                )
+
                 message = (
                     f"{recipient['name']}, your KingaPesa transfer of "
-                    f"{current['receive_currency']} {Decimal(current['receive_amount']):.2f} "
+                    f"{current['receive_currency']} "
+                    f"{Decimal(current['receive_amount']):.2f} "
                     "is ready to collect."
                 )
-                # Simulated SMS only. The notification and status commit together.
+
+                # Simulated SMS only.
+                # The notification and status commit together.
                 # The unique transfer_id also prevents duplicate rows on retries.
                 db.execute(
-                    """INSERT INTO notifications
-                       (transfer_id, recipient_id, channel, message, status, created_at)
-                       VALUES (?, ?, 'SMS', ?, 'sent', ?)
-                       ON CONFLICT(transfer_id) DO NOTHING""",
-                    (transfer_id, current["recipient_id"], message,
-                     datetime.now(timezone.utc).isoformat()),
+                    """
+                    INSERT INTO notifications (
+                        transfer_id,
+                        recipient_id,
+                        channel,
+                        message,
+                        status,
+                        created_at
+                    )
+                    VALUES (
+                        ?,
+                        ?,
+                        'SMS',
+                        ?,
+                        'sent',
+                        ?
+                    )
+                    ON CONFLICT(transfer_id) DO NOTHING
+                    """,
+                    (
+                        transfer_id,
+                        current["recipient_id"],
+                        message,
+                        datetime.now(timezone.utc).isoformat(),
+                    ),
                 )
-            return get_transfer(db, transfer_id)
+
+            return get_transfer(
+                db,
+                transfer_id,
+            )
 
     return app
 
