@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { api } from './api';
+import { payForServicePurchase, formatZar, walletCost } from './demoAccount';
 import { keys, readStored, writeStored } from './storage';
 
 const types = ['airtime', 'electricity', 'grocery_voucher'];
@@ -13,6 +14,7 @@ function ServiceDetails({ quote, t }) {
     <dt>{t('fsServiceFee')}</dt><dd>{money(quote.service_fee, quote.send_currency)}</dd>
     <dt>{t('totalYouPay')}</dt><dd>{money(quote.total_cost, quote.send_currency)}</dd>
     <dt>{t('exchangeRate')}</dt><dd>1 {quote.send_currency} = {quote.exchange_rate} {quote.local_currency}</dd>
+    {quote.send_currency === 'BWP' && <><dt>{t('accountDemo')}</dt><dd>{t('accountWalletDebit', { amount: formatZar(walletCost(quote)) })}</dd></>}
     <dt>{t(`fsValue.${quote.service_type}`)}</dt><dd>{money(quote.local_value, quote.local_currency)}</dd>
   </dl>;
 }
@@ -110,21 +112,22 @@ export default function FamilyServices({ sendCurrency, recipients, loadRecipient
   async function confirm() {
     if (!quote || quote.send_currency !== sendCurrency) return;
     if (pending || readStored(keys.pendingServicePurchase, null)) { setPending(true); return; }
-    // Save a marker BEFORE POST. Storage failure must not permit an untracked send.
-    if (!store(keys.pendingServicePurchase, { sendCurrency: quote.send_currency, createdAt: new Date().toISOString() })) return;
-    setPending(true);
-    let result;
-    try {
-      result = await api('/service-purchases', 'POST', {
-        quote, target_reference: serviceType === 'grocery_voucher' ? recipient.name : target,
-      });
-    } catch (err) {
-      if (err.kind === 'application' && err.status >= 400 && err.status < 500) {
-        if (store(keys.pendingServicePurchase, null)) setPending(false);
-        if (err.status === 409) setQuote(null);
+    const result = await payForServicePurchase(quote, async () => {
+      // Keep the existing uncertainty marker around the original backend request.
+      if (!store(keys.pendingServicePurchase, { sendCurrency: quote.send_currency, createdAt: new Date().toISOString() })) throw new Error('accountUnavailable');
+      setPending(true);
+      try {
+        return await api('/service-purchases', 'POST', {
+          quote, target_reference: serviceType === 'grocery_voucher' ? recipient.name : target,
+        });
+      } catch (err) {
+        if (err.kind === 'application' && err.status >= 400 && err.status < 500) {
+          if (store(keys.pendingServicePurchase, null)) setPending(false);
+          if (err.status === 409) setQuote(null);
+        }
+        throw err;
       }
-      throw err;
-    }
+    });
     setPurchase(result); setTarget(''); setAmount(''); setQuote(null);
     // Only a lookup pointer is persisted; no phone, meter, token or voucher is cached.
     if (store(keys.currentServicePurchase, { id: result.id })) {

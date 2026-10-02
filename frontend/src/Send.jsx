@@ -4,6 +4,7 @@ import { Navbar, Icon } from './components/WelcomeParts';
 import { senders } from './sender';
 import './welcome.css';
 import './send.css';
+import { DemoBalance } from './components/DemoBalance';
 
 const money = (amount, currency) => `${currency} ${Number(amount).toFixed(2)}`;
 
@@ -34,6 +35,7 @@ function SendView(s) {
       {!s.canSave && <p className="kp-send-message" role="alert">{t('storageUnavailable')}</p>}
       {s.error && <p className="kp-send-message" role="alert">{t(s.error, { currency: s.sendCurrency })}</p>}
       {s.pendingSend && !transfer && !s.busy && <p className="kp-send-message" role="alert">{t('sendUncertain')}</p>}
+      <DemoBalance t={t} quote={quote} />
       {!transfer && <ol className="kp-send-steps" aria-label="Send money steps">{['Recipient', 'Amount', 'Review & send'].map((label, index) => <li key={label} className={currentStep === index + 1 ? 'is-current' : ''} aria-current={currentStep === index + 1 ? 'step' : undefined}><span>{index + 1}</span>{label}</li>)}</ol>}
       <section className="kp-send-panel" aria-label={transfer ? 'Transfer details' : 'Send money'}>
         {!transfer && !reviewing && step === 1 && <>

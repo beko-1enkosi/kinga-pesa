@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Icon, Navbar } from './components/WelcomeParts';
-import { languageStorageKey, readLanguage } from './i18n/translations';
+import { languageStorageKey, readLanguage, translate } from './i18n/translations';
 import './welcome.css';
 import './dashboard.css';
+import { DemoBalance, AccountControls } from './components/DemoBalance';
 
 // Display-only example. Never write mock activity to transfer storage or send it
 // to the API. /demo retains ownership of real prototype drafts and transfers.
@@ -16,6 +17,7 @@ export default function Dashboard() {
   const [language, setLanguage] = useState(readLanguage);
   const [notice, setNotice] = useState('');
   const [helpOpen, setHelpOpen] = useState(false);
+  const t = (key, values) => translate(language, key, values);
   return <div className="kp-home kp-dashboard">
     <a className="kp-skip" href="#dashboard-main">Skip to dashboard</a>
     <Navbar profile language={language} onLanguageChange={value => {
@@ -25,6 +27,7 @@ export default function Dashboard() {
     }} />
     <main id="dashboard-main" className="kp-container kp-dashboard-main" tabIndex={-1}>
       <div className="kp-dashboard-greeting"><div><p className="kp-eyebrow">YOUR EVERYDAY CONNECTION TO HOME</p><h1>Welcome, Naledi<span>.</span></h1><p>A little support goes a long way. Make someone’s day back home.</p></div><span className="kp-demo-label">Demo account</span></div>
+      <DemoBalance t={t} />
       <section className="kp-send-banner" aria-labelledby="send-title">
         <div><span className="kp-banner-icon"><Icon name="send" /></span><h2 id="send-title">Across borders.<br />Closer to home.</h2><p>Send money with clear fees and exchange rates,<br className="kp-desktop-break" /> so you know what your family will receive.</p><a className="kp-send-cta" href="/send">Send money <Icon name="arrow" /></a></div>
         <div className="kp-send-illustration" aria-hidden="true"><div className="kp-orbit kp-orbit-outer" /><div className="kp-orbit kp-orbit-inner" /><span className="kp-connection-line" /><span className="kp-person kp-person-you">N</span><span className="kp-person kp-person-home">M</span><span className="kp-connection-heart">♡</span><span className="kp-connection-caption">You & your people</span></div>
@@ -49,6 +52,8 @@ export default function Dashboard() {
         </article>
       </section>
       <aside className="kp-send-again"><div><p className="kp-eyebrow">KEEP THE CONNECTION GOING</p><h2>A little more love for home.</h2><p>Ready to support Mama again?</p></div><a href="/send" className="kp-button">Send again <Icon name="arrow" /></a></aside>
+      <section className="kp-home-services"><h2>{t('utilityHeading')}</h2><div>{[['airtime','airtime'],['electricity','electricity'],['voucher','food']].map(([type,icon]) => <a key={type} href={`/whatsapp?service=${type}`}><Icon name={icon} />{t(`utility.${type}`)}</a>)}</div></section>
+      <AccountControls t={t} />
       <p className="kp-dashboard-notice" role="status">{notice}</p>
     </main>
     <footer className="kp-footer kp-container"><span>KingaPesa <span aria-hidden="true">/</span> Made for connection.</span><span>Prototype · No real money moves here.</span></footer>

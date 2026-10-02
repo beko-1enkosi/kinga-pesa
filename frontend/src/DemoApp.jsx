@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { languages, languageStorageKey, readLanguage, translate } from './i18n/translations';
 
 import { api } from './api';
+import { payForTransfer, formatZar, walletCost } from './demoAccount';
 import { keys, readStored, writeStored, storageAvailable } from './storage';
 import { useConnection } from './useConnection';
 import RecipientAccess from './RecipientAccess';
@@ -18,6 +19,7 @@ function QuoteDetails({ quote, t }) {
       <dt>{t('transferFee')}</dt><dd>{money(quote.fee, quote.send_currency)}</dd>
       <dt>{t('exchangeRate')}</dt><dd>1 {quote.send_currency} = {quote.exchange_rate} {quote.receive_currency}</dd>
       <dt>{t('totalYouPay')}</dt><dd>{money(quote.total_cost, quote.send_currency)}</dd>
+      {quote.send_currency === 'BWP' && <><dt>{t('accountDemo')}</dt><dd>{t('accountWalletDebit', { amount: formatZar(walletCost(quote)) })}</dd></>}
       <dt>{t('recipientReceives')}</dt><dd>{money(quote.receive_amount, quote.receive_currency)}</dd>
     </dl>
   );
@@ -222,18 +224,20 @@ export default function DemoApp({ renderSend }) {
       if (changed) { setError('quoteUpdated'); return; }
       confirmed = latest;
     }
-    // Persist an uncertainty marker before sending. Never automatically retry a POST.
-    save(keys.pendingSend, { recipientId: confirmed.recipient_id, amount: confirmed.send_amount, sendCurrency: confirmed.send_currency, createdAt: new Date().toISOString() });
-    setPendingSend(true);
-    let created;
-    try { created = await api('/transfers', 'POST', confirmed); }
-    catch (err) {
-      if (err.kind === 'application' && err.status >= 400 && err.status < 500) {
-        save(keys.pendingSend, null);
-        setPendingSend(false);
+    const created = await payForTransfer(confirmed, async () => {
+      // Persist uncertainty BEFORE POST. A lost response must not be retried.
+      if (!writeStored(keys.pendingSend, { recipientId: confirmed.recipient_id, amount: confirmed.send_amount, sendCurrency: confirmed.send_currency, createdAt: new Date().toISOString() })) {
+        setCanSave(false); throw new Error('accountUnavailable');
       }
-      throw err;
-    }
+      setPendingSend(true);
+      try { return await api('/transfers', 'POST', confirmed); }
+      catch (err) {
+        if (err.kind === 'application' && err.status >= 400 && err.status < 500) {
+          save(keys.pendingSend, null); setPendingSend(false);
+        }
+        throw err;
+      }
+    });
     await displayTransfer(created);
     save(keys.pendingSend, null);
     setPendingSend(false);

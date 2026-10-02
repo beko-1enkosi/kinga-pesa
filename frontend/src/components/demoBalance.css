@@ -1,0 +1,14 @@
+.kp-account-balance { grid-column: 1 / -1; padding: 20px 24px; border: 1px solid var(--kp-border); border-radius: 14px; background: var(--kp-white); margin: 0 0 22px; }
+.kp-account-balance > span, .kp-account-balance small { display: block; font-size: 12px; color: var(--kp-text-muted); }
+.kp-account-balance strong { display: block; font-size: 29px; margin: 5px 0; letter-spacing: -.7px; }
+.kp-account-balance p { font-size: 12px; }
+.kp-account-controls { grid-column: 1 / -1; margin-top: 20px; font-size: 13px; }
+.kp-account-controls button, .kp-account-controls input { min-height: 44px; padding: 10px 14px; border: 1px solid var(--kp-border); border-radius: 8px; background: var(--kp-white); color: var(--kp-black); font: inherit; max-width: 100%; }
+.kp-account-controls summary { cursor: pointer; min-height: 44px; padding: 12px 0; color: var(--kp-text-muted); }
+.kp-account-controls label { display: block; margin-bottom: 8px; }
+.kp-account-controls p { line-height: 1.6; }
+.kp-account-controls button { margin: 6px; }
+.kp-home-services { grid-column: 1 / -1; margin-top: 24px; }
+.kp-home-services h2 { font-size: 20px; }
+.kp-home-services > div { display: flex; flex-wrap: wrap; gap: 12px; }
+.kp-home-services a { display: flex; align-items: center; gap: 12px; padding: 16px; min-height: 52px; text-decoration: none; color: var(--kp-orange-dark); background: var(--kp-white); border: 1px solid var(--kp-border); border-radius: 12px; }
