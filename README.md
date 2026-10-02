@@ -1,93 +1,90 @@
 # KingaPesa 🛡️💸
 
-> **Money home, made simple, clear and resilient.**
+> **Send money. Support needs. Stay connected.**
 
-KingaPesa is a multilingual, data-conscious cross-border remittance prototype built for the **Mukuru × WeThinkCode_ SheHacks Hackathon**.
+KingaPesa is a multilingual, low-connectivity-aware cross-border family-support prototype built for the **Mukuru × WeThinkCode_ SheHacks Hackathon**.
 
-The product is designed around one idea:
+The product is built around one simple idea:
 
 > **Supporting family across borders should be simple, transparent, inclusive and flexible.**
 
-KingaPesa lets customers send money, track it clearly, continue through unstable connectivity, and support family needs through services such as airtime, electricity and grocery vouchers.
+KingaPesa combines cross-border remittance with clear fees and exchange rates, transfer tracking, multilingual support, safer recipient access, and purpose-based support such as airtime, electricity and grocery vouchers.
 
-The hackathon version uses **mock financial rates, simulated transfers and simulated provider fulfilment** where real commercial integrations are not available.
+The hackathon version uses **mock exchange rates, simulated money movement, simulated SMS notifications and simulated provider fulfilment** where commercial integrations are not available.
 
 ---
 
-# 🌍 The Problem
+## 🌍 The Problem
 
-Cross-border customers may face several barriers at once:
+Cross-border customers may face several barriers at the same time:
 
 - unclear fees and exchange rates
 - unreliable mobile signal
-- limited or expensive mobile data
+- expensive or limited mobile data
 - language barriers
 - uncertainty about whether money has arrived
-- recipients who may need safer access to funds
-- senders who sometimes want to support a specific need rather than send unrestricted cash
+- recipients who may want more control over how funds are accessed
+- senders who sometimes want to support a specific family need instead of sending unrestricted cash
 
-A customer may not only want to say:
+A sender may want to say:
 
 > “Send Mama money.”
 
-They may instead want to say:
+But sometimes the need is more specific:
 
 > “Buy Mama airtime.”
 
 > “Pay for Mama’s electricity.”
 
-> “Send Mama a food voucher.”
+> “Send Mama a grocery voucher.”
 
-KingaPesa brings those needs into one simple cross-border experience.
-
----
-
-# 💡 The KingaPesa Solution
-
-KingaPesa is designed as a lightweight family-support platform.
-
-A sender can use KingaPesa to:
-
-- send cross-border money
-- see fees and exchange rates before confirming
-- track a transfer
-- receive information in multiple languages
-- continue after network interruptions
-- simulate sponsored / zero-rated access
-- notify the recipient when money is ready
-- buy airtime for a recipient
-- pay for prepaid electricity
-- send a grocery voucher
-- understand the value of each purchase in the recipient’s currency
-
-The core transfer system is already working.
-
-Additional provider-based services can be demonstrated using **mock integrations** so judges can experience the complete product idea without requiring live commercial provider APIs.
+KingaPesa brings those needs into one lightweight experience.
 
 ---
 
-# ✅ Working Core Features
+# ✅ What KingaPesa Does
 
 ## 1. Cross-Border Remittance
 
-The sender can:
+A sender can:
 
+- choose where they are sending from
 - choose a recipient
-- enter an amount in ZAR
+- enter an amount
 - request a quote
 - see the transfer fee
 - see the exchange rate
 - see the total amount they will pay
 - see exactly what the recipient will receive
 - confirm the transfer
-- track the transfer status
+- track the transfer from send to collection
 
-Current demo recipients include:
+### Demo sender options
 
-- **Mama — Zimbabwe — USD**
-- **Naledi — Botswana — BWP**
+| Sender country | Currency |
+| --- | --- |
+| South Africa | ZAR |
+| Botswana | BWP |
 
-Transfer journey:
+### Demo recipients
+
+| Recipient | Country | Receive currency |
+| --- | --- | --- |
+| Mama | Zimbabwe | USD |
+| Naledi | Botswana | BWP |
+
+The sender country determines the sender currency.
+
+Supported demo routes include:
+
+```text
+ZAR → USD
+ZAR → BWP
+BWP → USD
+BWP → BWP
+```
+
+### Transfer journey
 
 ```text
 Sent
@@ -99,23 +96,40 @@ Ready to Collect
 Collected
 ```
 
-For the hackathon demo, status progression can be advanced manually so the complete transfer journey can be shown.
+For the hackathon demo, normal transfers can be advanced manually so the complete journey can be demonstrated.
 
 ---
 
 ## 2. Transparent Fees and FX 💱
 
-KingaPesa shows the cost of the transaction before confirmation.
+KingaPesa shows the customer the transaction cost before confirmation.
 
-Current demo fee calculation:
+### Demo remittance fees
+
+**South Africa / ZAR**
 
 ```text
 ZAR 10.00 + 2% of the amount sent
 ```
 
-Mock exchange rates are currently used.
+**Botswana / BWP**
 
-The sender can clearly see:
+```text
+BWP 7.50 + 2% of the amount sent
+```
+
+### Mock exchange rates
+
+| Route | Demo rate |
+| --- | ---: |
+| ZAR → USD | 1 ZAR = 0.055 USD |
+| ZAR → BWP | 1 ZAR = 0.75 BWP |
+| BWP → USD | 1 BWP = 0.073333 USD |
+| BWP → BWP | 1 BWP = 1 BWP |
+
+All financial calculations use `Decimal` arithmetic and `ROUND_HALF_UP`.
+
+Before sending, the customer can see:
 
 ```text
 You send
@@ -125,7 +139,7 @@ Total you pay
 Recipient receives
 ```
 
-The backend also recalculates the quote before creating a transfer so altered totals are rejected.
+The backend recalculates the quote during confirmation and rejects altered fees, rates, totals or currencies.
 
 ---
 
@@ -141,18 +155,59 @@ The selected language is remembered on the device.
 
 The interface translates:
 
-- transfer information
-- fee information
-- statuses
+- remittance screens
+- Family Services
+- transfer statuses
 - notifications
-- connection messages
-- error messages
+- Safe Access screens
+- connectivity messages
+- validation and error messages
 
-Backend status values remain stable while the frontend translates how they are shown to the customer.
+Backend values remain stable while the frontend translates how they are shown to the customer.
 
 ---
 
-## 4. Receiver Notification 📩
+## 4. Low-Connectivity Support 📶
+
+KingaPesa is designed for customers using unstable or expensive connections.
+
+The app can:
+
+- detect when the browser is offline
+- detect when the browser is online but the backend cannot be reached
+- save a transfer draft
+- restore the selected recipient and sender country
+- cache recipient information
+- restore an existing transfer after the page is closed
+- restore notifications
+- reconnect and fetch the latest state
+- preserve completed service-purchase receipts
+- reopen the production app shell using a lightweight service worker
+
+KingaPesa does **not** pretend financial actions can safely complete offline.
+
+When the device is offline:
+
+- a new quote is not created
+- a transfer cannot be confirmed
+- a Family Service purchase cannot be completed
+- Safe Access financial actions are blocked
+
+This avoids confirming outdated information or replaying financial requests blindly.
+
+---
+
+## 5. Safe Reconnection and Duplicate Protection
+
+If connectivity is lost after a quote is received, KingaPesa requires a live connection before confirmation and can revalidate the quote.
+
+For uncertain transfer or service-purchase responses, the app does not automatically repeat the financial request.
+
+This reduces the risk of creating duplicate transactions after a connection failure.
+
+---
+
+## 6. Receiver Notification 📩
 
 When a transfer reaches:
 
@@ -160,7 +215,7 @@ When a transfer reaches:
 Ready to Collect
 ```
 
-KingaPesa creates a simulated SMS notification.
+KingaPesa creates one simulated SMS notification for the recipient.
 
 Example:
 
@@ -168,97 +223,17 @@ Example:
 Mama, your KingaPesa transfer of USD 55.00 is ready to collect.
 ```
 
-The notification remains linked to the transfer.
+The notification remains linked to the transfer even after collection.
 
-> The current hackathon version simulates the SMS. No real telecom messaging provider is connected yet.
-
----
-
-## 5. Low-Connectivity Support 📶
-
-KingaPesa is designed for customers who may move in and out of connectivity.
-
-The app can:
-
-- detect when the device goes offline
-- detect when the browser is online but the backend cannot be reached
-- save a transfer draft
-- restore the selected recipient
-- restore the entered amount
-- cache recipient information
-- restore an existing transfer after the browser or tab is closed
-- show the last saved transfer state offline
-- restore notifications
-- reconnect and fetch the latest transfer state
-
-The product does **not** pretend financial actions can safely complete offline.
-
-When the user is offline:
-
-- a new quote is not generated
-- a transfer cannot be confirmed
-- the customer is told that their progress has been saved
-
-This avoids confirming outdated rates or fees.
+> The prototype simulates SMS fulfilment. No live telecom messaging provider is connected.
 
 ---
 
-## 6. Safe Reconnection Behaviour
+# 🛡️ Safe Access
 
-If connectivity is lost after a quote is received, KingaPesa waits for a live connection before sending.
+Safe Access is an optional recipient-side feature designed to give the recipient more control over what amount is displayed when accessing a transfer.
 
-If needed, the quote is checked again.
-
-The app also avoids automatically retrying uncertain transfer requests, helping reduce the risk of duplicate sends.
-
----
-
-## 7. Data-Light Mode 📱
-
-KingaPesa includes a Data-light mode designed for unstable or expensive connections.
-
-The current implementation:
-
-- avoids unnecessary polling
-- avoids large media
-- avoids unnecessary background traffic
-- reuses cached information when appropriate
-- keeps the interface lightweight
-- stores app files for offline reopening
-
-Financial API actions are not treated as offline transactions.
-
----
-
-## 8. Sponsored / Zero-Rated Data Demo 📡
-
-KingaPesa demonstrates how sponsored data could work in a real deployment.
-
-```text
-Mobile data switched ON
-        +
-Participating network
-        ↓
-KingaPesa traffic is sponsored
-        ↓
-Customer does not use their own paid data bundle
-```
-
-The current prototype includes a **Sponsored Data Demo** mode.
-
-### Demo limitation
-
-The browser prototype does not actually zero-rate traffic.
-
-In a real product, sponsored access would require agreements and technical integration between Mukuru and participating mobile-network operators.
-
----
-
-# 🛡️ Next Standout Feature: Safe Access
-
-Safe Access is the planned recipient-side protection feature.
-
-A recipient can configure:
+The recipient configures:
 
 - a **Primary PIN**
 - a separate **Safety PIN**
@@ -267,265 +242,146 @@ A recipient can configure:
 Example:
 
 ```text
-Real amount available: USD 100
-Protected amount:      USD 20
+Real amount available:      USD 55.00
+Protected amount:           USD 15.00
 ```
 
 Primary PIN:
 
 ```text
-Available to collect: USD 100
+Available to collect: USD 55.00
 ```
 
 Safety PIN:
 
 ```text
-Available to collect: USD 20
+Available to collect: USD 15.00
 ```
 
-The recipient interface should look normal in both cases.
+The recipient interface looks the same regardless of which valid PIN was entered.
 
-If USD 5 is collected using the Safety PIN:
+If USD 5 is withdrawn using the Safety PIN:
 
 ```text
-Real remaining amount:      USD 95
-Protected remaining amount: USD 15
+Real remaining amount:      USD 50.00
+Protected remaining amount: USD 10.00
 ```
 
-### Safe Access principles
+### Safe Access implementation principles
 
-- never visually reveal which PIN was used
-- never store PINs in plaintext
-- preserve correct financial accounting
+- PINs are never stored in plaintext
+- PBKDF2-HMAC-SHA256 is used for PIN hashing
+- Primary and Safety PINs use separate random salts
+- PIN comparisons are constant-time
 - withdrawals reduce the real balance
-- protected balance persists
-- do not automatically contact police
-- do not claim to guarantee personal safety
+- Safety PIN withdrawals also reduce the protected balance
+- the recipient API does not reveal which PIN was used
+- PINs and authenticated recipient balances are not stored in localStorage
+- Safe Access requires live backend connectivity
+- once Safe Access is configured, a transfer cannot be manually marked Collected while real funds remain
+- the transfer becomes Collected automatically when the real remaining balance reaches zero
 
-Safe Access is the next major feature planned for implementation.
-
----
-
-# 🛍️ KingaPesa Services
-
-The demo product can go beyond sending unrestricted cash.
-
-These service flows may use **mock provider integrations** so the complete customer experience can be demonstrated.
-
-The mock layer should behave like a real provider response from the user’s perspective while remaining clearly identified in technical documentation as simulated.
+Safe Access does **not** contact emergency services and does not claim to guarantee personal safety.
 
 ---
 
-## 1. Buy Airtime for Family 📱
+# 🛍️ Support a Need
 
-A sender can buy airtime directly for someone in another country.
+KingaPesa also lets the sender support a specific family need.
 
-Example flow:
+The current demo supports three Zimbabwe services for **Mama**:
+
+### 📱 Airtime
+
+Provider:
 
 ```text
-Services
-   ↓
-Buy Airtime
-   ↓
-Choose recipient / country
-   ↓
-Choose mobile network
-   ↓
-Enter phone number
-   ↓
-Choose airtime value
-   ↓
-See cost in ZAR
-   ↓
-See value in recipient currency
-   ↓
-Confirm
-   ↓
-Airtime sent successfully
+Econet Zimbabwe
 ```
 
-### Demo behaviour
+The sender enters a phone number and amount, then sees:
 
-For the hackathon:
+- sender currency
+- service fee
+- exchange rate
+- USD airtime value
+- provider
 
-- one network can be selected as the demo provider
-- available airtime bundles or denominations can be mocked
-- the purchase response can be simulated
-- a mock transaction reference can be generated
-- the interface can show the purchase as completed
+A successful demo purchase receives a generated reference.
+
+> **Demo purchase — no real airtime is sent.**
+
+### ⚡ Electricity
+
+Provider:
+
+```text
+ZESA / ZETDC
+```
+
+The sender enters a prepaid meter number and amount.
+
+KingaPesa returns:
+
+- transparent currency conversion
+- local electricity value
+- a generated demo purchase reference
+- a generated 20-digit demo electricity token
+
+> **Demo token — not valid for real electricity.**
+
+### 🛒 Grocery Voucher
+
+Retailer:
+
+```text
+Gain Cash & Carry
+```
+
+The sender chooses an amount and sees the sender cost and USD voucher value before confirmation.
+
+KingaPesa then generates:
+
+- a demo voucher reference
+- a demo voucher code
+
+> **Demo voucher — not redeemable in a real store.**
+
+---
+
+## Family Services and Sender Currency
+
+The selected sender country applies to both **Send Money** and **Support a Need**.
 
 Example:
 
 ```text
-Airtime Purchase
-
-You pay: ZAR 100
-Recipient value: USD XX.XX
-Mobile number: +XXX...
-Provider: Demo Network
-
-Status: Successful
+Sender: Botswana / BWP
+Service: Econet Zimbabwe airtime
+You pay: BWP 100.00
+Service fee: BWP 0.00
+Exchange rate: 1 BWP = 0.073333 USD
+Airtime value: USD 7.33
 ```
 
-### Production version
+Family Services are currently configured only for the Zimbabwe demo recipient.
 
-A real deployment would connect KingaPesa to an approved airtime provider, mobile operator or aggregator API.
+Naledi / Botswana does not currently have demo provider services configured.
 
 ---
 
-## 2. Pay Electricity ⚡
+# 💱 Currency and Value Clarity
 
-A sender can pay for prepaid electricity for a family member.
+Every financial flow follows the same transparency principle.
 
-Example flow:
+Before confirming, the customer should understand:
 
-```text
-Services
-   ↓
-Electricity
-   ↓
-Choose country / provider
-   ↓
-Enter meter number
-   ↓
-Choose amount
-   ↓
-See ZAR cost
-   ↓
-See value in local currency
-   ↓
-Confirm
-   ↓
-Receive electricity token
-```
-
-### Demo behaviour
-
-The hackathon version can simulate:
-
-- provider selection
-- meter validation
-- currency conversion
-- successful payment
-- generated prepaid token
-- transaction reference
-
-Example:
-
-```text
-Electricity Purchase
-
-Meter: 123456789
-You pay: ZAR 300
-Local value: USD XX.XX
-
-Token:
-4821 7739 1084 5620
-
-Status: Successful
-```
-
-The token is a **mock demo token**, not a real utility token.
-
-### Production version
-
-A real deployment would require integration with the selected electricity provider or prepaid utility aggregator.
-
----
-
-## 3. Grocery / Food Voucher 🛒
-
-A sender may want to make sure support is used specifically for food and household essentials.
-
-Instead of sending unrestricted cash, KingaPesa can provide a grocery voucher.
-
-Example:
-
-```text
-Services
-   ↓
-Grocery Voucher
-   ↓
-Choose retailer
-   ↓
-Choose voucher value
-   ↓
-See ZAR cost
-   ↓
-See recipient-currency value
-   ↓
-Confirm
-   ↓
-Voucher generated
-```
-
-The demo may use **Shoprite** as the example retailer if the team chooses it for the final prototype.
-
-### Demo behaviour
-
-KingaPesa can simulate:
-
-- retailer selection
-- voucher amount
-- FX conversion
-- voucher generation
-- redemption code
-- recipient notification
-
-Example:
-
-```text
-Grocery Voucher
-
-Retailer: Shoprite
-You pay: ZAR 500
-Voucher value: USD XX.XX
-
-Voucher code:
-KP-FOOD-483921
-
-Status: Ready to use
-```
-
-The voucher code is a **mock demo code**.
-
-### Why this matters
-
-Cash is flexible, but sometimes the sender has a specific intention:
-
-> “This money is for groceries.”
-
-KingaPesa gives the sender the option to support that need directly.
-
----
-
-# 💱 Currency Translation and Value Clarity
-
-Every KingaPesa service should follow the same transparency principle as remittances.
-
-Before confirming, the sender should understand:
-
-- what they are paying in ZAR
+- what they are paying
+- the sender currency
 - the exchange rate
 - any fee
 - what value reaches the recipient
-- the recipient-country currency
-
-Example:
-
-```text
-You pay:
-ZAR 500
-
-Exchange rate:
-1 ZAR = X.XX local currency
-
-Recipient value:
-USD XX.XX
-
-Service:
-Grocery Voucher
-```
+- the recipient or provider currency
 
 This applies to:
 
@@ -534,24 +390,59 @@ This applies to:
 - electricity
 - grocery vouchers
 
-For the hackathon, mock FX values are acceptable.
+---
 
-A production product would connect to an approved live rate source.
+# 📱 Data-Light Mode
+
+KingaPesa includes a Data-Light mode designed for constrained connections.
+
+The current implementation:
+
+- avoids unnecessary polling
+- avoids large media
+- avoids unnecessary background requests
+- reuses cached recipient information where appropriate
+- keeps the frontend lightweight
+- stores application files for offline reopening
+
+Financial API mutations are never treated as offline transactions.
 
 ---
 
-# 🧭 Product Vision
+# 📡 Sponsored Data Demo
+
+KingaPesa also demonstrates how sponsored or zero-rated access could work in a production environment.
+
+Conceptually:
+
+```text
+Mobile data switched ON
+        +
+Participating mobile network
+        ↓
+KingaPesa traffic is sponsored
+        ↓
+Customer does not use their own paid data bundle
+```
+
+The current browser prototype only **simulates this product concept**.
+
+Real zero-rating would require commercial and technical agreements with participating mobile-network operators.
+
+---
+
+# 🧭 Product Model
 
 ```text
                          KingaPesa
                              │
           ┌──────────────────┼──────────────────┐
           │                  │                  │
-      Send Money         Pay a Need         Protect Access
+      Send Money         Support a Need      Protect Access
           │                  │                  │
      Remittance            Airtime           Safe Access
      Tracking              Electricity
-     Fees + FX             Food Voucher
+     Fees + FX             Grocery Voucher
      Notifications         Currency Clarity
 ```
 
@@ -561,107 +452,36 @@ It is about helping people **support family across borders in the way that famil
 
 ---
 
-# 🎯 Hackathon Build Scope
-
-## Already Working
-
-- core remittance journey
-- transparent fee display
-- mock FX
-- transfer tracking
-- English
-- isiZulu
-- Shona
-- simulated receiver notification
-- low-connectivity persistence
-- reopening saved transfers
-- connection recovery
-- Data-light mode
-- Sponsored Data Demo
-
-## Next Major Build
-
-- Safe Access
-
-## Planned Demo Services
-
-- Airtime
-- Electricity
-- Grocery Voucher
-- Currency translation for service value
-
-These may use mock provider data and simulated fulfilment.
-
-The purpose is to demonstrate the complete KingaPesa customer experience, not to pretend that commercial integrations were completed during the hackathon.
-
----
-
-# 🔬 Provider Research
-
-The team can research one realistic provider for each service so that the mock demo resembles a possible real deployment.
-
-### Airtime
-
-Research one:
-
-- mobile network
-- country
-- denominations
-- digital purchase flow
-- API or aggregator option
-
-### Electricity
-
-Research one:
-
-- electricity provider
-- country
-- meter / customer identifier
-- prepaid purchase process
-- integration possibility
-
-### Grocery Voucher
-
-Research:
-
-- Shoprite or another suitable grocery retailer
-- supported country
-- digital voucher availability
-- redemption process
-- possible API / voucher partner
-
-The prototype may still mock the transaction even after a realistic provider is selected.
-
----
-
-# 🧪 Prototype and Production Boundaries
+# 🧪 Prototype Boundaries
 
 KingaPesa is a hackathon prototype.
 
 ## Simulated in the demo
 
-- money movement
+- real money movement
 - exchange rates
-- SMS fulfilment
-- sponsored mobile data
-- airtime fulfilment
-- electricity fulfilment
-- grocery voucher generation
-- external provider responses
+- SMS delivery
+- sponsored / zero-rated mobile data
+- airtime provider fulfilment
+- electricity provider fulfilment
+- grocery voucher fulfilment
+- commercial provider responses
 
-## Real application logic in the prototype
+## Implemented application logic
 
-- transfer journey
 - quote calculations
-- status progression
+- sender-country and sender-currency handling
+- transfer creation
+- transfer status progression
 - data persistence
 - multilingual UI
 - connectivity handling
-- caching
+- cached restoration
+- duplicate-send protection
 - receiver notification records
-- transaction-state handling
-
-This allows the team to demonstrate a realistic finished product while being clear about which external systems are mocked.
+- Safe Access PIN verification and withdrawal accounting
+- Family Service quoting and purchase persistence
+- generated demo service references, tokens and voucher codes
 
 ---
 
@@ -699,29 +519,41 @@ SQLite
 
 ---
 
-# 🔌 Current API
+# 🔌 API
+
+## Core
 
 ```text
 GET    /health
-
 GET    /recipients
-
 POST   /quote
-
 POST   /transfers
-
 GET    /transfers/{id}
-
 PATCH  /transfers/{id}/status
-
 GET    /transfers/{id}/notifications
 ```
 
-Safe Access and service-purchase endpoints will be added as those demo features are implemented.
+## Safe Access
+
+```text
+POST   /transfers/{id}/safe-access
+GET    /transfers/{id}/safe-access
+POST   /transfers/{id}/recipient-access
+POST   /transfers/{id}/withdrawals
+```
+
+## Family Services
+
+```text
+GET    /recipients/{id}/services
+POST   /service-quote
+POST   /service-purchases
+GET    /service-purchases/{id}
+```
 
 ---
 
-# 📁 Current Project Structure
+# 📁 Project Structure
 
 ```text
 kinga-pesa/
@@ -730,6 +562,9 @@ kinga-pesa/
 │   ├── database.py
 │   ├── main.py
 │   ├── models.py
+│   ├── pricing.py
+│   ├── safe_access.py
+│   ├── services.py
 │   ├── requirements.txt
 │   └── tests/
 │
@@ -738,7 +573,10 @@ kinga-pesa/
 │   ├── src/
 │   │   ├── i18n/
 │   │   ├── api.js
+│   │   ├── FamilyServices.jsx
 │   │   ├── main.jsx
+│   │   ├── RecipientAccess.jsx
+│   │   ├── sender.js
 │   │   ├── storage.js
 │   │   ├── style.css
 │   │   └── useConnection.js
@@ -755,14 +593,23 @@ kinga-pesa/
 
 ## Backend
 
+### Linux / macOS
+
 ```bash
 cd backend
-
 python3 -m venv .venv
 source .venv/bin/activate
-
 pip install -r requirements.txt
+uvicorn main:app --reload
+```
 
+### Windows PowerShell
+
+```powershell
+cd backend
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
@@ -772,7 +619,7 @@ Backend:
 http://127.0.0.1:8000
 ```
 
-FastAPI docs:
+FastAPI documentation:
 
 ```text
 http://127.0.0.1:8000/docs
@@ -782,8 +629,7 @@ http://127.0.0.1:8000/docs
 
 ```bash
 cd frontend
-
-npm ci
+npm install
 npm run dev
 ```
 
@@ -797,44 +643,67 @@ http://127.0.0.1:5173
 
 ```bash
 cd frontend
-
 npm run build
-
 npm run preview -- --host 127.0.0.1 --port 5173 --strictPort
 ```
 
 Open the application once while online before testing an offline reload.
 
+Chrome DevTools can be used to simulate offline mode and mobile devices during testing.
+
+---
+
+# 🧪 Validation
+
+Latest functional validation before frontend visual polish:
+
+```text
+184 backend tests passed
+npm run build passed
+```
+
+Browser validation covered:
+
+- South Africa / ZAR → Zimbabwe / USD
+- South Africa / ZAR → Botswana / BWP
+- Botswana / BWP → Zimbabwe / USD
+- Botswana / BWP → Botswana / BWP
+- all three Zimbabwe Family Services using BWP
+- quote invalidation when sender country changes
+- historical transaction currency preservation
+- persistence across refresh/reopen
+- English, isiZulu and Shona
+- Safe Access on BWP-funded USD transfers
+- notifications
+- offline / reconnection behaviour
+- lost-response duplicate protection
+
 ---
 
 # 🎬 Suggested Demo Story
 
-The final demo should follow one person instead of presenting disconnected features.
+The demo follows one family-support journey instead of presenting disconnected features.
 
 ### Thandi and Mama
 
-**Thandi works in Johannesburg and supports her mother, Mama, across the border.**
+**Thandi supports her mother, Mama, across the border.**
 
 1. Thandi opens KingaPesa.
-2. She chooses her preferred language.
-3. She selects Mama.
-4. She enters the amount she wants to send.
-5. KingaPesa clearly shows the fee, exchange rate and recipient amount.
-6. Thandi confirms.
-7. The transfer moves to **Sent** and then **In Transit**.
-8. Her connection drops.
-9. KingaPesa preserves her journey.
-10. She closes the page.
-11. She returns later and the transfer is still there.
-12. KingaPesa reconnects and retrieves the latest status.
-13. The transfer becomes **Ready to Collect**.
-14. Mama receives a simulated notification.
-15. Safe Access can then demonstrate safer recipient access.
-16. Thandi can also choose to support Mama differently:
-    - buy airtime
-    - pay electricity
-    - send a grocery voucher
-17. KingaPesa shows the ZAR cost and what the service is worth in Mama’s currency.
+2. She chooses where she is sending from.
+3. She chooses her preferred language.
+4. She selects Mama.
+5. She enters the amount she wants to send.
+6. KingaPesa shows the fee, exchange rate and recipient amount before confirmation.
+7. Thandi confirms the transfer.
+8. The transfer moves through **Sent → In Transit → Ready to Collect**.
+9. Mama receives a simulated notification.
+10. If connectivity drops, KingaPesa preserves the journey and reconnects safely.
+11. Mama can use Safe Access when collecting the transfer.
+12. Thandi can also support Mama directly through:
+    - airtime
+    - electricity
+    - a grocery voucher
+13. KingaPesa shows what each service costs in the sender currency and what value reaches Mama.
 
 End with:
 
@@ -842,35 +711,9 @@ End with:
 
 ---
 
-# 🌅 Morning Finalisation Checklist
-
-- [ ] Test remittance from start to finish
-- [ ] Test English
-- [ ] Test isiZulu
-- [ ] Test Shona
-- [ ] Test offline draft restoration
-- [ ] Close and reopen a saved transfer
-- [ ] Test reconnection
-- [ ] Test receiver notification
-- [ ] Implement Safe Access
-- [ ] Build Airtime demo
-- [ ] Build Electricity demo
-- [ ] Build Grocery Voucher demo
-- [ ] Add service currency-value display
-- [ ] Select realistic mock providers
-- [ ] Finalise visual design
-- [ ] Remove unnecessary debug/demo clutter
-- [ ] Run backend tests
-- [ ] Run frontend build
-- [ ] Prepare 5–7 minute presentation
-- [ ] Give every team member a speaking section
-- [ ] Rehearse the full customer story
-
----
-
 # 👥 Team Principle
 
-Before adding a feature, ask:
+Before adding anything to KingaPesa, ask:
 
 > **Does this make supporting family across borders simpler, clearer, more inclusive or safer?**
 
