@@ -52,7 +52,7 @@ export default function Dashboard() {
         </article>
       </section>
       <aside className="kp-send-again"><div><p className="kp-eyebrow">KEEP THE CONNECTION GOING</p><h2>A little more love for home.</h2><p>Ready to support Mama again?</p></div><a href="/send" className="kp-button">Send again <Icon name="arrow" /></a></aside>
-      <section className="kp-home-services"><h2>{t('utilityHeading')}</h2><div>{[['airtime','airtime'],['electricity','electricity'],['voucher','food']].map(([type,icon]) => <a key={type} href={`/whatsapp?service=${type}`}><Icon name={icon} />{t(`utility.${type}`)}</a>)}</div></section>
+      <section className="kp-home-services"><h2>{t('utilityHeading')}</h2><div>{[['airtime','airtime'],['electricity','electricity'],['voucher','food']].map(([type,icon]) => <a key={type} href={`/services/${type}`}><Icon name={icon} />{t(`utility.${type}`)}</a>)}</div></section>
       <AccountControls t={t} />
       <p className="kp-dashboard-notice" role="status">{notice}</p>
     </main>

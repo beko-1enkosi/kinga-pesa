@@ -1,0 +1,8 @@
+/* Native utilities reuse /send layout, cards, controls and responsive rules. */
+.kp-native-service .kp-amount-fields input:not([type="number"]) { font-size: 17px; font-weight: 400; }
+.kp-native-service .kp-send-summary dd { max-width: 64%; }
+.kp-native-navigation { display: flex; gap: 24px; justify-content: space-between; }
+.kp-native-reference { background: var(--kp-cream); border-radius: 12px; padding: 20px; margin: 22px 0; }
+.kp-native-reference h3 { color: var(--kp-text-muted); font-size: 12px; font-weight: 500; margin: 0 0 10px; }
+.kp-native-reference p { font-size: 20px; font-weight: 650; letter-spacing: 1px; line-height: 1.7; overflow-wrap: anywhere; margin: 0; }
+@media (max-width: 520px) { .kp-native-reference { padding: 16px; } .kp-native-reference p { font-size: 18px; } }

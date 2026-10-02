@@ -3,7 +3,11 @@ import { createRoot } from 'react-dom/client';
 import { hasDemoSession } from './demoAccount';
 
 // Separate lazy entry points keep the existing prototype and public screens isolated.
+const ServicePurchase = lazy(() => import('./ServicePurchase'));
 const routes = {
+  '/services/airtime': ServicePurchase,
+  '/services/electricity': ServicePurchase,
+  '/services/voucher': ServicePurchase,
   '/demo': lazy(async () => { await import('./style.css'); return import('./DemoApp'); }),
   '/whatsapp': lazy(() => import('./WhatsApp')),
   '/send': lazy(() => import('./Send')),
@@ -14,7 +18,7 @@ const Welcome = lazy(() => import('./Welcome'));
 const Page = routes[window.location.pathname.replace(/\/$/, '')] || Welcome;
 
 // Demo-session selection only, not production authentication.
-const accountRoute = ['/app', '/send', '/whatsapp', '/demo'].includes(window.location.pathname.replace(/\/$/, ''));
+const accountRoute = ['/app', '/send', '/whatsapp', '/demo', '/services/airtime', '/services/electricity', '/services/voucher'].includes(window.location.pathname.replace(/\/$/, ''));
 if (accountRoute && !hasDemoSession()) window.location.replace('/login');
 // Do not restore a previous account screen (and its balance) from browser history.
 if (accountRoute) {
