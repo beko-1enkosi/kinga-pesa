@@ -48,3 +48,13 @@
   .kp-pin-dots { margin: 22px 0; }
 }
 @media (prefers-reduced-motion: reduce) { .kp-loading-nodes i { animation: none; } }
+.kp-login-main { background-image: radial-gradient(var(--kp-peach) 1px, transparent 1px); background-size: 22px 22px; padding-block: 42px; }
+.kp-login-panel { border-radius: 18px; border-top: 3px solid var(--kp-orange); box-shadow: 0 12px 36px rgb(23 23 23 / 5%); }
+.kp-login-panel h1 { font-size: 22px; }
+.kp-login-panel h1 span { color: var(--kp-black); font-size: 42px; letter-spacing: -1.5px; }
+.kp-pin-keypad { gap: 12px; }
+.kp-pin-keypad button { min-height: 60px; border-radius: 10px; background: var(--kp-white); font-weight: 600; border-color: #c8c8c8; }
+.kp-pin-dots span { width: 16px; height: 16px; }
+.kp-pin-dots .is-filled { background: var(--kp-orange); border-color: var(--kp-orange-dark); }
+.kp-login-footnote { display: table; margin: 22px auto 0; padding: 8px; background: var(--kp-surface); }
+@media (max-width: 520px) { .kp-login-main { padding: 24px 16px; } .kp-login-panel { padding-inline: 22px; } .kp-pin-keypad button { min-height: 54px; } }

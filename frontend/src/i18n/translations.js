@@ -119,7 +119,7 @@ export const translations = {
 
     waTitle: "Chat with KingaPesa",
     waDemo: "Simulated chat · No WhatsApp connection. OTP is a demo, not real authentication.",
-    waHello: "Hi Naledi 👋🏾 What would you like to do today?",
+    waHello: "Hi Thandi 👋🏾 What would you like to do today?",
     waSend: "Send money",
     waTrack: "Track transfer",
     waFees: "Check fees",
@@ -298,6 +298,7 @@ export const translations = {
     'status.Collected': 'Collected',
   },
   zu: {
+    waHello: "Sawubona Thandi 👋🏾 Yini ongathanda ukuyenza namuhla?",
     transferFeeBreakdown: 'Imali eyisisekelo engu-{base} + 2% wemali engu-{amount} oyithumelayo = {fee}.',
     "accountAvailable": "Imali etholakalayo",
     "accountDemo": "Imali yokuzama kuphela",
@@ -618,7 +619,7 @@ export const translations = {
 
     waTitle: "Taura neKingaPesa",
     waDemo: "Hurukuro yekuedza · Haina kubatana neWhatsApp. OTP ndeyekuedza chete.",
-    waHello: "Mhoro Naledi 👋🏾 Unoda kuitei nhasi?",
+    waHello: "Mhoro Thandi 👋🏾 Unoda kuitei nhasi?",
     waSend: "Tumira mari",
     waTrack: "Tarisa mari yakatumirwa",
     waFees: "Tarisa muripo",

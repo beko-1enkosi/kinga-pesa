@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import DemoApp from './DemoApp';
+import { BrandLogo } from './components/Brand';
 import { TransferFee } from './components/TransferFee';
 import { languages } from './i18n/translations';
 import { DemoBalance } from './components/DemoBalance';
@@ -168,7 +169,7 @@ function Chat(s) {
   const review = s.quote && ['quote', 'otp', 'sending'].includes(stage);
   return <div className="kp-home kp-chat-page">
     <main className="kp-chat-shell">
-      <header className="kp-chat-header"><a href="/app" aria-label={t('waBack')}>←</a><span className="kp-chat-avatar" aria-hidden="true">K</span><div><h1>KingaPesa</h1><span>Business · Demo</span></div><label><span className="kp-sr-only">{t('language')}</span><select aria-label={t('language')} value={s.language} onChange={e => s.setLanguage(e.target.value)}>{languages.map(item => <option key={item.code} value={item.code}>{item.name}</option>)}</select></label></header>
+      <header className="kp-chat-header"><a href="/app" aria-label={t('waBack')}>←</a><div><h1><BrandLogo /></h1><span>Business · Demo</span></div><label><span className="kp-sr-only">{t('language')}</span><select aria-label={t('language')} value={s.language} onChange={e => s.setLanguage(e.target.value)}>{languages.map(item => <option key={item.code} value={item.code}>{item.name}</option>)}</select></label></header>
       <p className="kp-chat-disclaimer">{t('waShortDemo')}</p><div className="kp-chat-account"><DemoBalance t={t} quote={review ? s.quote : null} /></div><p className="kp-chat-connection" role="status">{t(s.connectionText)} {s.connection === 'weak' && <button onClick={s.checkConnection}>{t('retryConnection')}</button>}</p>
       <div ref={thread} className="kp-chat-thread" role="log" aria-label={t('waTitle')} aria-live="polite">
         {messages.map((message, index) => <div key={index} className={`kp-bubble ${message.user ? 'kp-bubble-user' : ''}`}>{message.user ? message.text : t(message.key, message.values)}</div>)}

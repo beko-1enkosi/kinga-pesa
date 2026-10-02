@@ -23,3 +23,14 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 .data-access h2 { margin-top: 0; font-size: 1rem; }
 .toggle { display: flex; align-items: center; gap: 8px; }
 .toggle input { width: 18px; min-height: 18px; margin: 0; flex-shrink: 0; }
+/* The complete legacy demo keeps every control and uses the shared brand tokens. */
+body { color: var(--kp-black); background: var(--kp-surface); font-family: var(--kp-font); }
+main { max-width: 680px; padding: 28px 20px; }
+fieldset, .notification-card, .data-access { border: 1px solid var(--kp-border); border-radius: 12px; background: var(--kp-white); padding: 18px; }
+h1 { letter-spacing: -1px; } h2 { font-size: 22px; letter-spacing: -.5px; }
+button { border: 1px solid var(--kp-orange); border-radius: 10px; background: var(--kp-orange); color: var(--kp-black); font-weight: 600; }
+input, select { border-radius: 8px; }
+section { padding-top: 12px; }
+dd { font-variant-numeric: tabular-nums; }
+.error { color: var(--kp-black); background: var(--kp-peach); border-radius: 8px; }
+@media (max-width: 375px) { main { padding-inline: 16px; } dl { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); font-size: 14px; } }

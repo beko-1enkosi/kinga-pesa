@@ -12,3 +12,13 @@
 .kp-home-services h2 { font-size: 20px; }
 .kp-home-services > div { display: flex; flex-wrap: wrap; gap: 12px; }
 .kp-home-services a { display: flex; align-items: center; gap: 12px; padding: 16px; min-height: 52px; text-decoration: none; color: var(--kp-orange-dark); background: var(--kp-white); border: 1px solid var(--kp-border); border-radius: 12px; }
+.kp-account-balance { border-radius: 14px; border-top: 3px solid var(--kp-orange); }
+.kp-account-balance strong { font-variant-numeric: tabular-nums; letter-spacing: -1.2px; font-size: 34px; }
+.kp-account-controls { border-top: 1px solid var(--kp-border); padding-top: 20px; }
+.kp-account-controls details { border: 1px solid var(--kp-border); border-radius: 12px; background: var(--kp-white); padding: 0 16px; margin-top: 12px; }
+.kp-account-controls summary { color: var(--kp-black); font-weight: 600; }
+.kp-account-controls details > p { color: var(--kp-text-muted); max-width: 75ch; }
+.kp-home-services > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.kp-home-services a { color: var(--kp-black); font-size: 14px; font-weight: 650; padding: 20px; }
+.kp-home-services svg { color: var(--kp-orange-dark); }
+@media (max-width: 600px) { .kp-home-services > div { grid-template-columns: 1fr; gap: 10px; } .kp-home-services a { padding: 16px; } }

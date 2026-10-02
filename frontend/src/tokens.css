@@ -1,0 +1,22 @@
+/* Shared KingaPesa palette. No external fonts or UI dependencies. */
+:root {
+  --kp-orange: #dd6e2e;
+  --kp-orange-dark: #b83e0b;
+  --kp-peach: #f7d0b6;
+  --kp-cream: #f8e7d5;
+  --kp-white: #ffffff;
+  --kp-black: #171717;
+  --kp-text-muted: #565656;
+  --kp-border: #dedbd7;
+  --kp-surface: #fff8f1;
+  --kp-shadow: 0 8px 24px rgb(23 23 23 / 4%);
+  --kp-font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--kp-surface); color: var(--kp-black); font-family: var(--kp-font); }
+button, input, select { font: inherit; }
+:focus-visible { outline: 3px solid var(--kp-orange-dark); outline-offset: 4px; }
+button, a, input, select, summary { touch-action: manipulation; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

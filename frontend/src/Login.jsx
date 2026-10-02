@@ -85,7 +85,7 @@ export default function Login() {
     <main className="kp-login-main">
       <section ref={panel} id="login-panel" className="kp-login-panel" tabIndex={-1} aria-labelledby="login-title" aria-describedby="pin-help">
         <p className="kp-eyebrow">A LITTLE CLOSER TO HOME</p>
-        <h1 id="login-title">Welcome back,<span>Naledi</span></h1>
+        <h1 id="login-title">Welcome back,<span>Thandi</span></h1>
         <h2>Enter your PIN</h2>
         <p id="pin-help" className="kp-pin-help">Use your 4-digit KingaPesa PIN to continue.</p>
         <PinPad length={length} disabled={checking} onDigit={addDigit} onDelete={removeDigit} />

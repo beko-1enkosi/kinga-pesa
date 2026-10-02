@@ -27,11 +27,11 @@ export default function Dashboard() {
       setNotice('dash.languageChanged');
     }} />
     <main id="dashboard-main" className="kp-container kp-dashboard-main" tabIndex={-1}>
-      <div className="kp-dashboard-greeting"><div><p className="kp-eyebrow">{t('dash.eyebrow')}</p><h1>{t('dash.welcome', { name: 'Naledi' })}<span>.</span></h1><p>{t('dash.intro')}</p></div><span className="kp-demo-label">{t('dash.demoAccount')}</span></div>
+      <div className="kp-dashboard-greeting"><div><p className="kp-eyebrow">{t('dash.eyebrow')}</p><h1>{t('dash.welcome', { name: 'Thandi' })}<span>.</span></h1><p>{t('dash.intro')}</p></div><span className="kp-demo-label">{t('dash.demoAccount')}</span></div>
       <DemoBalance t={t} />
       <section className="kp-send-banner" aria-labelledby="send-title">
         <div><span className="kp-banner-icon"><Icon name="send" /></span><h2 id="send-title">{t('dash.acrossBorders')}<br />{t('dash.closerHome')}</h2><p>{t('dash.heroFirst')}<br className="kp-desktop-break" />{' '}{t('dash.heroSecond')}</p><a className="kp-send-cta" href="/send">{t('sendMoney')} <Icon name="arrow" /></a></div>
-        <div className="kp-send-illustration" aria-hidden="true"><div className="kp-orbit kp-orbit-outer" /><div className="kp-orbit kp-orbit-inner" /><span className="kp-connection-line" /><span className="kp-person kp-person-you">N</span><span className="kp-person kp-person-home">M</span><span className="kp-connection-heart">♡</span><span className="kp-connection-caption">{t('dash.yourPeople')}</span></div>
+        <div className="kp-send-illustration" aria-hidden="true"><div className="kp-orbit kp-orbit-outer" /><div className="kp-orbit kp-orbit-inner" /><span className="kp-connection-line" /><span className="kp-person kp-person-you">T</span><span className="kp-person kp-person-home">M</span><span className="kp-connection-heart">♡</span><span className="kp-connection-caption">{t('dash.yourPeople')}</span></div>
       </section>
       <section className="kp-dashboard-actions" aria-labelledby="quick-title">
         <h2 id="quick-title">{t('dash.quickTitle')}</h2>
@@ -43,6 +43,7 @@ export default function Dashboard() {
         </div>
         <div id="dashboard-help" className="kp-dashboard-help" hidden={!helpOpen}><h3>{t('dash.helpTitle')}</h3><p>{t('dash.helpFlow')}</p><p>{t('dash.helpDemo')}</p></div>
       </section>
+      <section className="kp-home-services"><h2>{t('utilityHeading')}</h2><div>{[['airtime','airtime'],['electricity','electricity'],['voucher','food']].map(([type,icon]) => <a key={type} href={`/services/${type}`}><Icon name={icon} />{t(`utility.${type}`)}</a>)}</div></section>
       <section className="kp-recent" aria-labelledby="recent-title">
         <div className="kp-recent-heading"><h2 id="recent-title">{t('dash.recent')}</h2><span className="kp-demo-label">{t('dash.example')}</span></div>
         <article className="kp-transfer-card">
@@ -53,7 +54,7 @@ export default function Dashboard() {
         </article>
       </section>
       <aside className="kp-send-again"><div><p className="kp-eyebrow">{t('dash.keepConnected')}</p><h2>{t('dash.moreLove')}</h2><p>{t('dash.supportAgain', { name: 'Mama' })}</p></div><a href="/send" className="kp-button">{t('dash.sendAgain')} <Icon name="arrow" /></a></aside>
-      <section className="kp-home-services"><h2>{t('utilityHeading')}</h2><div>{[['airtime','airtime'],['electricity','electricity'],['voucher','food']].map(([type,icon]) => <a key={type} href={`/services/${type}`}><Icon name={icon} />{t(`utility.${type}`)}</a>)}</div></section>
+
       <AccountControls t={t} />
       <p className="kp-dashboard-notice" role="status">{notice && t(notice)}</p>
     </main>

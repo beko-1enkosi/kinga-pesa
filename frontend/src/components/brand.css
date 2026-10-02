@@ -1,0 +1,15 @@
+.kp-logo { display: block; width: 176px; height: auto; max-width: 100%; mix-blend-mode: multiply; }
+.kp-logo-stacked { width: 148px; }
+.kp-logo-fallback { font: 750 22px var(--kp-font); letter-spacing: -1px; }
+.kp-brand-loading { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; background: var(--kp-surface); color: var(--kp-black); padding: 24px; position: relative; overflow: hidden; isolation: isolate; }
+.kp-entry-content { position: relative; text-align: center; display: flex; align-items: center; flex-direction: column; }
+.kp-entry-logo { color: var(--kp-black); padding: 18px 22px; background: #fdfdfd; border-radius: 16px; }
+.kp-entry-tagline { font: 500 clamp(18px, 3vw, 23px)/1.5 var(--kp-font); letter-spacing: -.5px; margin: 28px 0 20px; }
+.kp-entry-corridors { display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 17px; }
+.kp-entry-corridors span { display: flex; gap: 10px; align-items: center; }
+.kp-entry-corridors i { width: 34px; border-top: 1px dotted var(--kp-orange); }
+.kp-entry-progress { display: block; width: 180px; max-width: 70vw; height: 4px; background: var(--kp-peach); margin-top: 25px; overflow: hidden; border-radius: 2px; }
+.kp-entry-progress > span { display: block; height: 100%; background: var(--kp-orange); transform-origin: left; animation: kp-entry-fill 1s ease-out both; }
+@keyframes kp-entry-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .kp-entry-progress > span { animation: none; transform: scaleX(1); } }
+@media (max-width: 520px) { .kp-logo { width: 130px; } .kp-logo-stacked { width: 138px; } }

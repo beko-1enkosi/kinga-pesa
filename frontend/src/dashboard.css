@@ -79,3 +79,45 @@
   .kp-transfer-card { padding: 20px 16px; } .kp-transfer-status { font-size: 10px; padding: 7px 9px; } .kp-transfer-amounts dd { font-size: 20px; } .kp-transfer-amounts > div + div { padding-left: 16px; } .kp-transfer-steps li { font-size: 9px; gap: 8px; } .kp-transfer-meta { font-size: 10px; }
   .kp-send-again { padding: 24px; flex-direction: column; align-items: stretch; } .kp-send-again .kp-button { align-self: stretch; }
 }
+/* Final brand pass: quiet surfaces, a clear send action, and discreet connection detail. */
+.kp-dashboard-main { padding-bottom: 24px; }
+.kp-dashboard-greeting h1 { font-weight: 750; }
+.kp-send-banner { background: var(--kp-peach); color: var(--kp-black); border: 1px solid var(--kp-peach); border-radius: 16px; padding: 30px; }
+.kp-send-banner h2 { font-weight: 750; }
+.kp-send-banner p { color: var(--kp-black); }
+.kp-banner-icon { color: var(--kp-orange-dark); border-color: var(--kp-orange); }
+.kp-send-cta { background: var(--kp-orange); color: var(--kp-black); }
+.kp-send-banner .kp-send-cta:focus-visible { outline-color: var(--kp-black); }
+.kp-send-illustration { width: 210px; height: 230px; margin-right: 0; }
+.kp-orbit { border-color: var(--kp-orange-dark); border-style: dotted; opacity: .4; }
+.kp-person { width: 58px; height: 58px; border: 4px solid var(--kp-white); background: var(--kp-cream); color: var(--kp-black); font-size: 21px; }
+.kp-person-you { left: 0; top: 122px; } .kp-person-home { right: 0; top: 40px; }
+.kp-connection-line { width: 170px; left: 20px; top: 116px; background: var(--kp-orange); transform: rotate(-30deg); }
+.kp-connection-heart { left: 85px; top: 90px; background: var(--kp-peach); color: var(--kp-orange-dark); }
+.kp-connection-caption { color: var(--kp-black); }
+.kp-quick-card { box-shadow: none; border-radius: 12px; }
+.kp-quick-icon { background: var(--kp-cream); }
+.kp-transfer-card { box-shadow: none; }
+.kp-transfer-status { border-radius: 8px; color: var(--kp-black); background: var(--kp-peach); }
+.kp-transfer-steps li { line-height: 1.5; }
+.kp-transfer-steps .is-current > span { background: var(--kp-orange); color: var(--kp-black); border-color: var(--kp-orange); }
+.kp-send-again { background: var(--kp-cream); border: 1px solid var(--kp-peach); }
+@media (min-width: 1000px) {
+ .kp-dashboard-main { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 0 24px; }
+ .kp-dashboard-main > .kp-account-balance { grid-column: span 4; margin: 0; display: flex; flex-direction: column; justify-content: center; padding: 32px; }
+ .kp-dashboard-main > .kp-account-balance strong { font-size: clamp(36px, 3.6vw, 48px); }
+ .kp-send-banner { grid-column: span 8; }
+ .kp-send-banner h2 { font-size: 32px; }
+ .kp-send-banner p { max-width: 300px; }
+ .kp-send-illustration { width: 160px; }
+ .kp-connection-line { width: 125px; }
+ .kp-connection-heart { left: 62px; }
+ .kp-recent { grid-column: span 8; }
+ .kp-send-again { grid-column: span 4; margin-top: 34px; }
+}
+@media (max-width: 520px) {
+ .kp-send-banner { padding: 24px; } .kp-send-banner h2 { font-size: 32px; }
+ .kp-transfer-overview { align-items: start; flex-wrap: wrap; }
+ .kp-transfer-amounts dd { font-size: clamp(18px, 5vw, 22px); }
+ .kp-transfer-meta { flex-wrap: wrap; }
+}

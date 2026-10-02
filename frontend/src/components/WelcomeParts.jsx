@@ -1,4 +1,6 @@
 import React from 'react';
+import { BrandLogo } from './Brand';
+import collage from '../assets/hero-collage.webp';
 import { languages, translate } from '../i18n/translations';
 
 // Small local SVGs avoid an icon package, webfont, or external image requests.
@@ -20,7 +22,7 @@ export function Icon({ name, ...props }) {
 export function Navbar({ language, onLanguageChange, onSignIn, back = false, profile = false, t = (key, values) => translate('en', key, values) }) {
   return <header className="kp-header">
     <nav className="kp-nav kp-container" aria-label={t('nav.main')}>
-      <a className="kp-brand" href="/" aria-label={t('nav.home')}>Kinga<span>Pesa</span><span className="kp-brand-dot" aria-hidden="true">.</span></a>
+      <a className="kp-brand" href="/" aria-label={t('nav.home')}><BrandLogo /></a>
       <div className="kp-nav-actions">
         <label className="kp-language"><Icon name="globe" /><span className="kp-sr-only">{t('language')}</span>
           <span aria-hidden="true">{language.toUpperCase()}</span>
@@ -28,7 +30,7 @@ export function Navbar({ language, onLanguageChange, onSignIn, back = false, pro
             {languages.map(item => <option key={item.code} value={item.code}>{item.name}</option>)}
           </select><span aria-hidden="true">⌄</span>
         </label>
-        {profile ? <div className="kp-profile" aria-label={t('nav.profile', { name: 'Naledi' })}><span className="kp-avatar" aria-hidden="true">N</span><span className="kp-profile-name">Naledi<span>{t('nav.personal')}</span></span></div>
+        {profile ? <div className="kp-profile" aria-label={t('nav.profile', { name: 'Thandi' })}><span className="kp-avatar" aria-hidden="true">T</span><span className="kp-profile-name">Thandi<span>{t('nav.personal')}</span></span></div>
           : back ? <a className="kp-button kp-button-small kp-back" href="/">← Back</a>
           : <button className="kp-button kp-button-small" onClick={onSignIn}>Sign In <Icon name="arrow" /></button>}
       </div>
@@ -40,11 +42,8 @@ export function Hero() {
   return <section className="kp-welcome" aria-labelledby="welcome-title">
     <div className="kp-intro"><p className="kp-eyebrow">CONNECTED BY MORE THAN BORDERS</p><span className="kp-intro-note">Closer to the people who matter.</span></div>
     <div className="kp-hero">
-      {/* COLLAGE PLACEHOLDER: set --kp-hero-image to url('/images/welcome-collage.webp')
-          in welcome.css when supplied. One static background, behind all text;
-          the gradient remains a fallback. Never clip photography into the letters. */}
-      <div className="kp-hero-content"><p className="kp-hero-kicker">A little closer to home.</p><h1 id="welcome-title">HELLO<span>Naledi</span></h1></div>
-      <p className="kp-hero-caption">Across borders.<br />Always connected.</p>
+      <div className="kp-hero-content"><h1 id="welcome-title"><span className="kp-hero-word" style={{ backgroundImage: `url(${collage})` }}>HELLO</span><span className="kp-hero-name">Thandi</span></h1></div>
+      <div className="kp-hero-caption"><p>Send money. Support needs.<br />Stay connected.</p><span>A little support goes a long way.</span></div>
     </div>
     <svg className="kp-network" viewBox="0 0 220 160" fill="none" aria-hidden="true"><ellipse cx="110" cy="80" rx="94" ry="60" /><ellipse cx="110" cy="80" rx="45" ry="60" /><path d="M16 80h188M30 48l147 74M35 118 176 37M110 20v120" /><circle cx="69" cy="65" r="4" /><circle cx="147" cy="57" r="4" /><circle cx="128" cy="97" r="4" /></svg>
   </section>;

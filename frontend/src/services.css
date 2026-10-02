@@ -6,3 +6,7 @@
 .kp-native-reference h3 { color: var(--kp-text-muted); font-size: 12px; font-weight: 500; margin: 0 0 10px; }
 .kp-native-reference p { font-size: 20px; font-weight: 650; letter-spacing: 1px; line-height: 1.7; overflow-wrap: anywhere; margin: 0; }
 @media (max-width: 520px) { .kp-native-reference { padding: 16px; } .kp-native-reference p { font-size: 18px; } }
+.kp-native-reference { background: var(--kp-peach); border: 1px solid var(--kp-peach); }
+.kp-native-reference h3 { color: var(--kp-black); line-height: 1.5; }
+.kp-native-reference p { font-variant-numeric: tabular-nums; letter-spacing: 1.5px; }
+.kp-native-navigation { flex-wrap: wrap; gap: 8px 24px; }

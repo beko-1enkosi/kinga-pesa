@@ -1,6 +1,8 @@
 import React, { lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { hasDemoSession } from './demoAccount';
+import './tokens.css';
+import { AppEntry } from './components/Brand';
 
 // Separate lazy entry points keep the existing prototype and public screens isolated.
 const ServicePurchase = lazy(() => import('./ServicePurchase'));
@@ -26,5 +28,5 @@ if (accountRoute) {
   window.addEventListener('pageshow', event => { if (event.persisted) window.location.reload(); });
 }
 createRoot(document.getElementById('root')).render(
-  accountRoute && !hasDemoSession() ? null : <Suspense fallback={<p role="status">KingaPesa…</p>}><Page /></Suspense>,
+  accountRoute && !hasDemoSession() ? null : <AppEntry><Suspense fallback={null}><Page /></Suspense></AppEntry>,
 );
