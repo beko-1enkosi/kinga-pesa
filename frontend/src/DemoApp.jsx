@@ -194,8 +194,15 @@ export default function DemoApp({ renderSend }) {
       setError(input.validity.valueMissing && !input.validity.badInput ? 'amountRequired' : 'invalidAmount');
       return;
     }
-    run(async () => {
-      const latest = await api('/quote', 'POST', { recipient_id: Number(recipientId), amount, send_currency: sendCurrency });
+    requestQuote(amount);
+  }
+
+  // Both form and conversation request pricing from the backend.
+  function requestQuote(value) {
+    if (!navigator.onLine) { setError(canSave ? 'offlineQuote' : 'offlineQuoteUnsaved'); return; }
+    if (connection !== 'online') { setError('weakConnection'); return; }
+    return run(async () => {
+      const latest = await api('/quote', 'POST', { recipient_id: Number(recipientId), amount: value, send_currency: sendCurrency });
       setQuote(latest);
       quoteStale.current = false;
     });
@@ -261,7 +268,7 @@ export default function DemoApp({ renderSend }) {
     selectRecipient: value => { setRecipientId(value); setDraftDirty(true); setQuote(null); setError(''); },
     editAmount: value => { setAmount(value); setDraftDirty(true); setQuote(null); setError(''); },
     editQuote: () => { setQuote(null); setError(''); },
-    getQuote, confirm: () => run(confirmTransfer),
+    getQuote, requestQuote, confirm: () => run(confirmTransfer),
     retryRecipients: () => run(loadRecipients), refresh: () => run(refreshTransfer),
     advance: () => run(async () => {
       await displayTransfer(await api(`/transfers/${transfer.id}/status`, 'PATCH', { status: nextStatus }));

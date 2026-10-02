@@ -24,7 +24,7 @@ self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
-  if (request.mode === 'navigate' && ['/', '/index.html', '/demo', '/demo/', '/login', '/login/', '/app', '/app/', '/send', '/send/'].includes(url.pathname)) {
+  if (request.mode === 'navigate' && ['/', '/index.html', '/demo', '/demo/', '/login', '/login/', '/app', '/app/', '/send', '/send/', '/whatsapp', '/whatsapp/'].includes(url.pathname)) {
     event.respondWith(fetch(request).catch(() => caches.open(CACHE).then(cache => cache.match('/index.html'))));
   } else if (ASSETS.includes(url.pathname) && url.pathname !== '/index.html') {
     event.respondWith(caches.open(CACHE).then(async cache => (await cache.match(request, { ignoreVary: true })) || fetch(request)));

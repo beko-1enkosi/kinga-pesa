@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 // Separate lazy entry points keep the existing prototype and public screens isolated.
 const routes = {
   '/demo': lazy(async () => { await import('./style.css'); return import('./DemoApp'); }),
+  '/whatsapp': lazy(() => import('./WhatsApp')),
   '/send': lazy(() => import('./Send')),
   '/login': lazy(() => import('./Login')),
   '/app': lazy(() => import('./Dashboard')),
