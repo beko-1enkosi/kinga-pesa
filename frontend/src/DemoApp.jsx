@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import './style.css';
 import { languages, languageStorageKey, readLanguage, translate } from './i18n/translations';
 
 import { api } from './api';
@@ -24,7 +23,7 @@ function QuoteDetails({ quote, t }) {
   );
 }
 
-export default function DemoApp() {
+export default function DemoApp({ renderSend }) {
   const [senderArea, setSenderArea] = useState('money');
   const [serviceBusy, setServiceBusy] = useState(false);
   const [recipientOpen, setRecipientOpen] = useState(false);
@@ -251,6 +250,24 @@ export default function DemoApp() {
   const connectionText = connection === 'online' ? (reconnected ? 'backOnline' : 'online') :
     connection === 'checking' ? 'checkingConnection' : connection === 'offline' ?
       (canSave ? 'deviceOffline' : 'offlineUnsaved') : (canSave ? 'weakConnection' : 'weakUnsaved');
+
+  // The polished sender view shares these exact API/persistence handlers with /demo.
+  if (renderSend) return renderSend({
+    t, language, setLanguage, recipients, recipientId, recipient, amount, sendCurrency,
+    senderCountry, changeSender, quote, transfer, transferName, statuses, nextStatus,
+    busy, loading, live, connection, connectionText, checkConnection, canSave, error,
+    pendingSend, draftDirty, recipientsCached, transferCached, notifications,
+    notificationsCached, notificationLoading, notificationError,
+    selectRecipient: value => { setRecipientId(value); setDraftDirty(true); setQuote(null); setError(''); },
+    editAmount: value => { setAmount(value); setDraftDirty(true); setQuote(null); setError(''); },
+    editQuote: () => { setQuote(null); setError(''); },
+    getQuote, confirm: () => run(confirmTransfer),
+    retryRecipients: () => run(loadRecipients), refresh: () => run(refreshTransfer),
+    advance: () => run(async () => {
+      await displayTransfer(await api(`/transfers/${transfer.id}/status`, 'PATCH', { status: nextStatus }));
+    }),
+    startAgain: startAnotherTransfer,
+  });
 
   if (recipientOpen && transfer) return (
     <main>
