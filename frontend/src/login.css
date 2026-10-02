@@ -1,0 +1,50 @@
+/* Login-only styles; the approved welcome foundation remains unchanged. */
+.kp-back { text-decoration: none; }
+.kp-login-main { padding: 36px 20px 20px; }
+.kp-login-panel {
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 30px 42px 18px;
+  background: var(--kp-white);
+  border: 1px solid var(--kp-border);
+  border-radius: 22px;
+  box-shadow: var(--kp-shadow);
+  text-align: center;
+}
+.kp-login-panel:focus:not(:focus-visible) { outline: none; }
+.kp-login-panel h1 { margin: 18px 0 24px; font-size: 24px; font-weight: 450; letter-spacing: -.7px; line-height: 1.3; }
+.kp-login-panel h1 span { display: block; font-size: 38px; font-weight: 700; color: var(--kp-orange-dark); margin-top: 3px; }
+.kp-login-panel h2 { font-size: 18px; margin: 0 0 8px; font-weight: 650; }
+.kp-pin-help { margin: 0; font-size: 13px; color: var(--kp-text-muted); line-height: 1.6; }
+.kp-pin-dots { display: flex; justify-content: center; gap: 22px; margin: 27px 0; }
+.kp-pin-dots span { width: 20px; height: 20px; border: 2px solid var(--kp-text-muted); border-radius: 50%; background: var(--kp-white); }
+.kp-pin-dots .is-filled { background: var(--kp-orange-dark); border-color: var(--kp-orange-dark); }
+.kp-pin-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 300px; margin: auto; }
+.kp-pin-keypad button { min-height: 56px; border: 1px solid var(--kp-border); border-radius: 14px; background: var(--kp-surface); color: var(--kp-black); font-size: 23px; font-weight: 500; display: grid; place-items: center; touch-action: manipulation; }
+.kp-pin-keypad button:active { background: var(--kp-cream); }
+.kp-login-panel button:disabled { cursor: default; opacity: .65; }
+.kp-pin-feedback { min-height: 48px; display: grid; align-content: center; font-size: 12px; line-height: 1.5; }
+.kp-pin-error { margin: 0; color: var(--kp-orange-dark); }
+.kp-pin-continue { width: 100%; max-width: 300px; }
+.kp-forgot { display: block; margin: 7px auto 0; min-height: 44px; padding: 8px 12px; border: 0; background: transparent; color: var(--kp-text-muted); text-decoration: underline; text-underline-offset: 4px; font-size: 12px !important; }
+.kp-pin-notice { margin: 0; font-size: 12px; line-height: 1.6; color: var(--kp-text-muted); }
+.kp-pin-notice:not(:empty) { margin-top: 8px; }
+.kp-pin-loading { display: inline-flex; align-items: center; justify-content: center; gap: 12px; color: var(--kp-text-muted); }
+.kp-loading-nodes { display: inline-flex; align-items: center; gap: 8px; position: relative; }
+.kp-loading-nodes::before { content: ''; position: absolute; height: 1px; inset: 50% 0 auto; background: var(--kp-peach); }
+.kp-loading-nodes i { position: relative; width: 7px; height: 7px; border-radius: 50%; background: var(--kp-orange); animation: kp-node-pulse .7s ease-in-out infinite alternate; }
+.kp-loading-nodes i:nth-child(2) { animation-delay: .15s; }
+.kp-loading-nodes i:nth-child(3) { animation-delay: .3s; }
+@keyframes kp-node-pulse { from { opacity: .4; } to { opacity: 1; } }
+.kp-login-footnote { text-align: center; font-size: 11px; color: var(--kp-text-muted); margin: 20px 0 0; }
+.kp-app-placeholder { max-width: 600px; padding: 64px 24px; margin: auto; }
+.kp-app-placeholder p { color: var(--kp-text-muted); }
+@media (hover: hover) { .kp-pin-keypad button:not(:disabled):hover { background: var(--kp-cream); border-color: var(--kp-peach); } }
+@media (max-width: 520px) {
+  .kp-login-main { padding: 20px 16px; }
+  .kp-login-panel { padding: 24px 22px 16px; border-radius: 18px; }
+  .kp-login-panel h1 { margin: 14px 0 20px; }
+  .kp-pin-keypad button { min-height: 52px; }
+  .kp-pin-dots { margin: 22px 0; }
+}
+@media (prefers-reduced-motion: reduce) { .kp-loading-nodes i { animation: none; } }
