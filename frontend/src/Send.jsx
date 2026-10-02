@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import DemoApp from './DemoApp';
+import { TransferFee } from './components/TransferFee';
 import { Navbar, Icon } from './components/WelcomeParts';
 import { senders } from './sender';
 import './welcome.css';
@@ -11,7 +12,7 @@ const money = (amount, currency) => `${currency} ${Number(amount).toFixed(2)}`;
 function AmountSummary({ value, t }) {
   return <dl className="kp-send-summary">
     <div><dt>{t('youSend')}</dt><dd>{money(value.send_amount, value.send_currency)}</dd></div>
-    <div><dt>{t('transferFee')}</dt><dd>{money(value.fee, value.send_currency)}</dd></div>
+    <TransferFee quote={value} t={t} money={money} />
     <div><dt>{t('exchangeRate')}</dt><dd>1 {value.send_currency} = {value.exchange_rate} {value.receive_currency}</dd></div>
     <div className="kp-send-total"><dt>{t('totalYouPay')}</dt><dd>{money(value.total_cost, value.send_currency)}</dd></div>
     <div className="kp-send-received"><dt>{t('recipientReceives')}</dt><dd>{money(value.receive_amount, value.receive_currency)}</dd></div>

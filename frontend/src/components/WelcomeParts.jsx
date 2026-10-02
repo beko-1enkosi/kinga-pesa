@@ -1,5 +1,5 @@
 import React from 'react';
-import { languages } from '../i18n/translations';
+import { languages, translate } from '../i18n/translations';
 
 // Small local SVGs avoid an icon package, webfont, or external image requests.
 export function Icon({ name, ...props }) {
@@ -17,18 +17,18 @@ export function Icon({ name, ...props }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>{paths[name]}</svg>;
 }
 
-export function Navbar({ language, onLanguageChange, onSignIn, back = false, profile = false }) {
+export function Navbar({ language, onLanguageChange, onSignIn, back = false, profile = false, t = (key, values) => translate('en', key, values) }) {
   return <header className="kp-header">
-    <nav className="kp-nav kp-container" aria-label="Main navigation">
-      <a className="kp-brand" href="/" aria-label="KingaPesa home">Kinga<span>Pesa</span><span className="kp-brand-dot" aria-hidden="true">.</span></a>
+    <nav className="kp-nav kp-container" aria-label={t('nav.main')}>
+      <a className="kp-brand" href="/" aria-label={t('nav.home')}>Kinga<span>Pesa</span><span className="kp-brand-dot" aria-hidden="true">.</span></a>
       <div className="kp-nav-actions">
-        <label className="kp-language"><Icon name="globe" /><span className="kp-sr-only">Language</span>
+        <label className="kp-language"><Icon name="globe" /><span className="kp-sr-only">{t('language')}</span>
           <span aria-hidden="true">{language.toUpperCase()}</span>
-          <select value={language} onChange={event => onLanguageChange(event.target.value)} aria-label="Language">
+          <select value={language} onChange={event => onLanguageChange(event.target.value)} aria-label={t('language')}>
             {languages.map(item => <option key={item.code} value={item.code}>{item.name}</option>)}
           </select><span aria-hidden="true">⌄</span>
         </label>
-        {profile ? <div className="kp-profile" aria-label="Demo profile: Naledi"><span className="kp-avatar" aria-hidden="true">N</span><span className="kp-profile-name">Naledi<span>Personal account · Demo</span></span></div>
+        {profile ? <div className="kp-profile" aria-label={t('nav.profile', { name: 'Naledi' })}><span className="kp-avatar" aria-hidden="true">N</span><span className="kp-profile-name">Naledi<span>{t('nav.personal')}</span></span></div>
           : back ? <a className="kp-button kp-button-small kp-back" href="/">← Back</a>
           : <button className="kp-button kp-button-small" onClick={onSignIn}>Sign In <Icon name="arrow" /></button>}
       </div>
